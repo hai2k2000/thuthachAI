@@ -101,7 +101,7 @@ export type Badge = {
 };
 
 export const heroImage =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDYF176b7Fgm80fDPEIi8bYpWoVRQI5Aathe6hNHDmB0Pjr5FKsFpUf9uGZpPWIt1B10Z4WScWlpDeBEVwtXApE17bTZSBOeAGnKB_fqRzGwrAyivv3Nm-eqCg8mH8DOAfCujKtfMq-VLv6QLYP4SVaLsv9b-GdFm0hjZB4uDjFK57BB4TNZNHH2uApPSIAarQRg2vseuWgs8Qi4IjOMBPaSPrvq2W9ls93c28Ceilo8Unt20E_rIbVQfo2JLl4_0dTvzHouccA48g';
+  'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1400&q=82';
 
 export const newsroomImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBntxMGkPP7Qyjmzpzl8hfNAH_HVMWFq5v13qQKYsFRaokoy5pUtTDbaEjg63nIB_ai28xklhGmLHNdCi8bgD52eWHhjLHyuzN2Qeh7H-pzp356DEgPkuVwWvNS0wRFx8pDYyf7tS7Qk1DIfwGZHc7mNEM3Ija7pe18neLi3kMOR9i8UpSGsx-uyrtCkqeIyhc-uyLXgNZOP0jeo3q_x_-6iGU4IcHqYK71fbBasUImPTvxAXH6vrH580UnFkW0urb3EOOqWIUTh8w';
@@ -119,21 +119,20 @@ export const routeMap = [
   '/submit',
   '/rules',
   '/prompts',
-  '/prompts/research-modern-journalism',
   '/featured',
-  '/featured/modern-journalism-research',
   '/leaderboard',
   '/ai-lab',
   '/contact',
+  '/admin',
   '/search',
 ];
 
 export const challengeWeeks = [
   { week: 1, title: 'Thử thách AI tuần 1', description: 'Ba nhóm nhiệm vụ: báo chí hiện đại, lưu trữ dữ liệu thông minh và sản phẩm truyền thông thương mại hóa.', status: 'Đang mở' },
-  { week: 2, title: 'Chủ đề tuần 2', description: 'Ban Tổ chức công bố chủ đề vào Thứ Tư hằng tuần.', status: 'Sắp diễn ra' },
-  { week: 3, title: 'Chủ đề tuần 3', description: 'Người tham gia sử dụng AI để thực hiện đầu việc thực tế gắn với chuyên môn.', status: 'Sắp diễn ra' },
-  { week: 4, title: 'Chủ đề tuần 4', description: 'Tiếp tục ghi nhận prompt, quy trình và kinh nghiệm ứng dụng AI hiệu quả.', status: 'Sắp diễn ra' },
-  { week: 5, title: 'Tuần đặc biệt', description: 'Tuần trao các giải đặc biệt về tiên phong, sáng tạo và lan tỏa AI.', status: 'Sắp diễn ra' },
+  { week: 2, title: 'Chủ đề tuần 2', description: 'Nội dung sẽ được Ban Tổ chức công bố sau.', status: 'Sắp diễn ra' },
+  { week: 3, title: 'Chủ đề tuần 3', description: 'Nội dung sẽ được Ban Tổ chức công bố sau.', status: 'Sắp diễn ra' },
+  { week: 4, title: 'Chủ đề tuần 4', description: 'Nội dung sẽ được Ban Tổ chức công bố sau.', status: 'Sắp diễn ra' },
+  { week: 5, title: 'Tuần đặc biệt', description: 'Một đề chung cho toàn cơ quan, không chia nhóm nhiệm vụ.', status: 'Sắp diễn ra' },
 ];
 
 export const challenges: Challenge[] = [
@@ -158,7 +157,7 @@ export const challenges: Challenge[] = [
       'Bản nghiên cứu tối thiểu 05 thể loại báo chí hiện đại.',
       'Bảng đối chiếu với sản phẩm hiện có của Tạp chí Thời đại.',
       'Đề xuất điều chỉnh, nâng cấp hoặc phát triển mới có sử dụng AI.',
-      'Bộ prompt, tóm tắt nhật ký tương tác AI và file minh chứng.',
+      'Nhật ký tác nghiệp theo từng bước, prompt sử dụng và file minh chứng.',
     ],
     submissionLink: '/submit',
     image: newsroomImage,
@@ -184,7 +183,7 @@ export const challenges: Challenge[] = [
       'Bản phân tích phương pháp và mô hình lưu trữ bằng AI.',
       'Mô hình/quy trình lưu trữ, quản lý văn bản và dữ liệu đề xuất cho Tạp chí.',
       'Giải pháp ứng dụng AI cho quản lý, chia sẻ và khai thác dữ liệu.',
-      'Bộ prompt, tóm tắt nhật ký tương tác AI và file minh chứng.',
+      'Nhật ký tác nghiệp theo từng bước, prompt sử dụng và file minh chứng.',
     ],
     submissionLink: '/submit',
     sampleFile: '/samples/bai-du-thi-nhom-tong-hop-nguyen-duy-dong.docx',
@@ -212,41 +211,11 @@ export const challenges: Challenge[] = [
       'Bản mô tả hoặc proposal sản phẩm truyền thông.',
       'Phân tích thị trường, khách hàng mục tiêu và khả năng thương mại hóa.',
       'Phương án truyền thông, tiếp thị và khai thác sản phẩm.',
-      'Bộ prompt, tóm tắt nhật ký tương tác AI và file minh chứng.',
+      'Nhật ký tác nghiệp theo từng bước, prompt sử dụng và file minh chứng.',
     ],
     submissionLink: '/submit',
     image: mediaImage,
     score: 100,
-  },
-  {
-    id: 'deep-research-brief',
-    week: 2,
-    title: 'Deep Research Brief',
-    shortTitle: 'Deep Research',
-    deadline: '15h00 ngày 13/7/2026',
-    status: 'Sắp diễn ra',
-    targetGroup: 'Phóng viên, Biên tập viên, Tổng hợp',
-    description: 'Thiết kế quy trình nghiên cứu chuyên sâu bằng AI, có kiểm chứng nguồn và ma trận luận điểm.',
-    requirements: ['Chọn một chủ đề nghiệp vụ thật.', 'Tạo quy trình kiểm chứng nguồn.', 'Có bảng câu hỏi nghiên cứu.'],
-    deliverables: ['Research brief', 'Prompt chain', 'Bảng kiểm chứng nguồn'],
-    submissionLink: '/submit',
-    image: heroImage,
-    score: 45,
-  },
-  {
-    id: 'ai-workflow-automation',
-    week: 4,
-    title: 'AI Workflow Automation',
-    shortTitle: 'AI Workflow',
-    deadline: '15h00 ngày 27/7/2026',
-    status: 'Sắp diễn ra',
-    targetGroup: 'Tất cả phòng/ban',
-    description: 'Xây dựng một workflow có thể nhân rộng để giảm thao tác lặp trong công việc hằng tuần.',
-    requirements: ['Có sơ đồ workflow.', 'Có vai trò kiểm duyệt của con người.', 'Có thước đo tiết kiệm thời gian.'],
-    deliverables: ['Workflow mẫu', 'Checklist vận hành', 'Đề xuất nhân rộng'],
-    submissionLink: '/submit',
-    image: archiveImage,
-    score: 55,
   },
 ];
 
@@ -653,11 +622,10 @@ export const scoringCriteria = [
 
 export const submissionChecklist = [
   'Thông tin người dự thi',
-  'Chủ đề hoặc nhiệm vụ thực hiện',
-  'Công cụ AI sử dụng, gồm tên nền tảng, phiên bản hoặc gói dịch vụ nếu có',
-  'Bộ prompt hoặc hệ thống câu hỏi chính đã sử dụng',
-  'Tóm tắt nhật ký tương tác với AI, nêu mục tiêu từng bước, nội dung trao đổi, kết quả AI trả về và quá trình điều chỉnh',
-  'Kết quả cuối cùng và lý do lựa chọn phương án đó',
+  'Tên bài dự thi và nội dung bài dự thi',
+  'File bài dự thi upload trực tiếp lên hệ thống',
+  'Các công cụ AI sử dụng, gồm tên nền tảng, phiên bản hoặc gói dịch vụ nếu có',
+  'Nhật ký tác nghiệp theo từng bước: nội dung thực hiện, công cụ AI, prompt, mô tả đáp án AI và lý do chọn kết quả',
   'Bài học kinh nghiệm rút ra trong quá trình sử dụng AI',
   'Kiến nghị hoặc đề xuất nhằm nâng cao hiệu quả ứng dụng AI trong công việc chuyên môn',
   'Phương pháp tương tác để AI hiểu đúng yêu cầu, văn phong, quy chuẩn hoặc đặc thù công việc của đơn vị',

@@ -177,8 +177,9 @@ img {
   max-width: 720px;
   margin: 0;
   color: var(--text);
-  font-size: clamp(48px, 6vw, 82px);
-  line-height: .98;
+  font-family: 'Nunito', 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: clamp(46px, 5.6vw, 76px);
+  line-height: 1.08;
   font-weight: 900;
 }
 
@@ -352,8 +353,9 @@ img {
 
 .previewGrid {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 520px);
   gap: 24px;
+  justify-content: center;
 }
 
 .wideFeature {
@@ -374,6 +376,24 @@ img {
 .leaderMini {
   display: grid;
   gap: 12px;
+}
+
+.leaderMiniEmpty {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  min-height: 160px;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  text-align: center;
+  font-weight: 800;
+}
+
+.leaderMiniEmpty .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 42px;
 }
 
 .leaderMini a:not(.ghostButton) {
@@ -702,6 +722,48 @@ img {
   border-color: var(--primary);
   background: var(--primary);
   color: #fff;
+}
+
+.tabs button.specialWeekTab {
+  border-color: #ffe3a1;
+  color: #a65d00;
+  background: #fff9e8;
+}
+
+.tabs button.specialWeekTab.active {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #fff;
+}
+
+.countdownBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 24px;
+  padding: 26px 28px;
+  border-radius: 24px;
+  background: var(--dark);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.countdownBanner div {
+  display: grid;
+  gap: 6px;
+}
+
+.countdownBanner span {
+  color: var(--primary-soft);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.countdownBanner strong {
+  font-size: clamp(28px, 5vw, 54px);
+  line-height: 1.05;
 }
 
 .timeline {
@@ -1091,6 +1153,56 @@ img {
   padding: 0;
   margin: 0;
   list-style: none;
+}
+
+.fileListGroup {
+  display: grid;
+  gap: 10px;
+}
+
+.fileListGroup > strong {
+  color: var(--text);
+}
+
+.workflowSteps {
+  display: grid;
+  gap: 16px;
+}
+
+.workflowStep {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.workflowStepHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workflowStepHeader strong {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.workflowStep label {
+  display: grid;
+  gap: 8px;
+}
+
+.workflowStep label span {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.addStepButton {
+  width: fit-content;
 }
 
 .selectedFiles li {
@@ -1515,6 +1627,91 @@ td {
   gap: 14px;
 }
 
+.adminTokenPanel {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.adminSection {
+  margin-top: 34px;
+}
+
+.adminSubmissionList {
+  display: grid;
+  gap: 18px;
+}
+
+.adminSubmissionCard {
+  display: grid;
+  gap: 16px;
+}
+
+.adminFiles,
+.adminControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.adminFiles > div {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.adminFiles ul {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.adminFiles li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminFiles a {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.adminFiles span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.adminControls label {
+  display: grid;
+  gap: 7px;
+}
+
+.adminControls span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.adminControls select,
+.adminControls input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text);
+  padding: 10px 12px;
+}
+
 .contactForm label {
   display: grid;
   gap: 6px;
@@ -1642,7 +1839,8 @@ td {
   .redHero,
   .insightBand,
   .detailGrid,
-  .labBento {
+  .labBento,
+  .adminTokenPanel {
     grid-template-columns: 1fr;
   }
 
@@ -1731,8 +1929,15 @@ td {
   .beforeAfter,
   .podium,
   .impactGrid,
-  .timeline {
+  .timeline,
+  .adminFiles,
+  .adminControls {
     grid-template-columns: 1fr;
+  }
+
+  .countdownBanner {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .statCard,

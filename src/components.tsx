@@ -335,9 +335,9 @@ export function ChallengeDetail({ challenge, navigate }: { challenge: Challenge;
         <section>
           <h2>Gợi ý cấu trúc bài dự thi</h2>
           <ol className="stepList">
-            <li>Mục tiêu và vấn đề công việc ban đầu.</li>
-            <li>Prompt chính, công cụ AI và nhật ký tương tác.</li>
-            <li>Kết quả cuối cùng, minh chứng trước - sau AI.</li>
+            <li>Nội dung bài dự thi hoặc sản phẩm chính.</li>
+            <li>Nhật ký tác nghiệp theo từng bước, gồm công cụ AI, prompt và cách chọn lọc kết quả.</li>
+            <li>File bài dự thi, file minh chứng trước - sau AI.</li>
             <li>Bài học kinh nghiệm và đề xuất áp dụng trong cơ quan.</li>
           </ol>
         </section>
@@ -371,8 +371,8 @@ export function WeekTabs({ activeWeek, onChange, weeks }: { activeWeek: string; 
     <div className="tabs">
       <button className={activeWeek === 'Tất cả' ? 'active' : ''} onClick={() => onChange('Tất cả')}>Tất cả</button>
       {weeks.map((week) => (
-        <button key={week} className={activeWeek === String(week) ? 'active' : ''} onClick={() => onChange(String(week))}>
-          Tuần {week}
+        <button key={week} className={`${activeWeek === String(week) ? 'active' : ''} ${week === 5 ? 'specialWeekTab' : ''}`} onClick={() => onChange(String(week))}>
+          {week === 5 ? 'Tuần đặc biệt' : `Tuần ${week}`}
         </button>
       ))}
     </div>
@@ -661,10 +661,9 @@ export function DepartmentLeaderboard({ items }: { items: DepartmentScore[] }) {
         <thead>
           <tr>
             <th>Phòng/ban</th>
-            <th>Số bài dự thi</th>
-            <th>Số prompt chia sẻ</th>
+            <th>Số bài đã chấm</th>
             <th>Điểm trung bình</th>
-            <th>Bài tiêu biểu</th>
+            <th>Bài dẫn đầu</th>
           </tr>
         </thead>
         <tbody>
@@ -672,7 +671,6 @@ export function DepartmentLeaderboard({ items }: { items: DepartmentScore[] }) {
             <tr key={item.department}>
               <td>{item.department}</td>
               <td>{item.submissionCount}</td>
-              <td>{item.promptCount}</td>
               <td>{item.averageScore}</td>
               <td>{item.featuredSubmission}</td>
             </tr>

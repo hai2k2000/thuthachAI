@@ -16,18 +16,20 @@ test('normalizes and validates required submission fields', () => {
     week: '1',
     title: '',
     aiTools: 'ChatGPT',
+    problem: 'Noi dung bai du thi',
     processSummary: 'Dung AI de tom tat tai lieu.',
     mainPrompt: 'Hay tom tat van ban theo 5 y.',
     finalResult: 'Ban tom tat da hoan thanh.',
   });
 
-  const result = validateSubmissionFields(fields, []);
+  const result = validateSubmissionFields(fields, { submissionFiles: [], evidenceFiles: [] });
 
   assert.equal(result.ok, false);
   assert.deepEqual(result.errors, [
     'Ho ten la bat buoc.',
     'Thong tin lien he la bat buoc.',
     'Ten bai du thi la bat buoc.',
+    'Can tai len it nhat mot file bai du thi.',
     'Can tai len it nhat mot file minh chung.',
   ]);
 });
@@ -40,12 +42,16 @@ test('accepts a complete submission with at least one uploaded evidence file', (
     week: '2',
     title: 'Tro ly tom tat phan hoi doc gia',
     aiTools: 'ChatGPT, Gemini',
+    problem: 'Noi dung bai du thi',
     processSummary: 'Lap prompt, chay thu, doi chieu ket qua va rut kinh nghiem.',
     mainPrompt: 'Dong vai bien tap vien du lieu va phan loai phan hoi doc gia.',
     finalResult: 'Tiet kiem 80% thoi gian tong hop.',
   });
 
-  const result = validateSubmissionFields(fields, [{ originalname: 'minh-chung.pdf', size: 1024 }]);
+  const result = validateSubmissionFields(fields, {
+    submissionFiles: [{ originalname: 'bai-du-thi.docx', size: 1024 }],
+    evidenceFiles: [{ originalname: 'minh-chung.pdf', size: 1024 }],
+  });
 
   assert.equal(result.ok, true);
   assert.deepEqual(result.errors, []);
@@ -77,7 +83,19 @@ test('formats submissions as csv with quoted values and file links', () => {
       lessons: 'Can kiem tra lai so lieu',
       recommendations: 'Dung lam quy trinh chung',
       publicPrompt: true,
-      files: [
+      reviewStatus: 'scored',
+      promptStatus: 'approved',
+      featuredStatus: 'approved',
+      score: 90,
+      judgeNote: 'Bai tot',
+      submissionFiles: [
+        {
+          originalName: 'bai-du-thi.docx',
+          downloadUrl: 'https://thuthachai.io.vn/api/submissions/files/bai-du-thi.docx?token=secret',
+          size: 4096,
+        },
+      ],
+      evidenceFiles: [
         {
           originalName: 'minh-chung.pdf',
           downloadUrl: 'https://thuthachai.io.vn/api/submissions/files/file.pdf?token=secret',
@@ -90,6 +108,7 @@ test('formats submissions as csv with quoted values and file links', () => {
   assert.match(csv, /^id,createdAt,participantName,/);
   assert.match(csv, /"Tro ly tom tat, phan loai"/);
   assert.match(csv, /"Hay tom tat ""van ban"" theo nhom chu de\."/);
+  assert.match(csv, /bai-du-thi\.docx/);
   assert.match(csv, /minh-chung\.pdf/);
   assert.match(csv, /https:\/\/thuthachai\.io\.vn\/api\/submissions\/files\/file\.pdf\?token=secret/);
 });

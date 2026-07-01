@@ -15,6 +15,7 @@ const textFields = [
   'finalResult',
   'lessons',
   'recommendations',
+  'workflowSteps',
 ];
 
 const requiredFields = [
@@ -24,9 +25,8 @@ const requiredFields = [
   ['week', 'Tuan thu thach la bat buoc.'],
   ['title', 'Ten bai du thi la bat buoc.'],
   ['aiTools', 'Cong cu AI da dung la bat buoc.'],
-  ['processSummary', 'Tom tat quy trinh la bat buoc.'],
-  ['mainPrompt', 'Prompt chinh la bat buoc.'],
-  ['finalResult', 'Ket qua cuoi cung la bat buoc.'],
+  ['problem', 'Noi dung bai du thi la bat buoc.'],
+  ['processSummary', 'Nhat ky tac nghiep la bat buoc.'],
 ];
 
 const csvHeaders = [
@@ -47,7 +47,13 @@ const csvHeaders = [
   'lessons',
   'recommendations',
   'publicPrompt',
-  'files',
+  'reviewStatus',
+  'promptStatus',
+  'featuredStatus',
+  'score',
+  'judgeNote',
+  'submissionFiles',
+  'evidenceFiles',
 ];
 
 export function normalizeSubmissionFields(raw = {}) {
@@ -55,12 +61,19 @@ export function normalizeSubmissionFields(raw = {}) {
   for (const field of textFields) {
     normalized[field] = String(raw[field] ?? '').trim();
   }
+  normalized.workflowSteps = normalizeWorkflowSteps(normalized.workflowSteps);
   normalized.publicPrompt = ['1', 'true', 'yes', 'on'].includes(String(raw.publicPrompt ?? '').toLowerCase());
   return normalized;
 }
 
 export function validateSubmissionFields(fields, files = []) {
   const errors = [];
+  const submissionFiles = Array.isArray(files)
+    ? files
+    : files.submissionFiles ?? [];
+  const evidenceFiles = Array.isArray(files)
+    ? files
+    : files.evidenceFiles ?? [];
 
   for (const [field, message] of requiredFields) {
     if (!fields[field]) {
@@ -68,7 +81,11 @@ export function validateSubmissionFields(fields, files = []) {
     }
   }
 
-  if (!Array.isArray(files) || files.filter((file) => Number(file?.size ?? 0) > 0).length === 0) {
+  if (!Array.isArray(submissionFiles) || submissionFiles.filter((file) => Number(file?.size ?? 0) > 0).length === 0) {
+    errors.push('Can tai len it nhat mot file bai du thi.');
+  }
+
+  if (!Array.isArray(evidenceFiles) || evidenceFiles.filter((file) => Number(file?.size ?? 0) > 0).length === 0) {
     errors.push('Can tai len it nhat mot file minh chung.');
   }
 
@@ -103,7 +120,13 @@ export function formatSubmissionsCsv(submissions) {
       submission.lessons,
       submission.recommendations,
       submission.publicPrompt ? 'Co' : 'Khong',
-      formatFileList(submission.files ?? []),
+      submission.reviewStatus,
+      submission.promptStatus,
+      submission.featuredStatus,
+      submission.score,
+      submission.judgeNote,
+      formatFileList(submission.submissionFiles ?? []),
+      formatFileList(submission.evidenceFiles ?? []),
     ]);
   }
 
@@ -111,10 +134,15 @@ export function formatSubmissionsCsv(submissions) {
 }
 
 export function mapSubmissionRow(row, { publicBaseUrl = '', token = '' } = {}) {
-  const files = JSON.parse(row.files_json || '[]').map((file) => ({
+  const submissionFiles = JSON.parse(row.submission_files_json || '[]').map((file) => ({
     ...file,
     downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName, token),
   }));
+  const evidenceFiles = JSON.parse(row.files_json || '[]').map((file) => ({
+    ...file,
+    downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName, token),
+  }));
+  const workflowSteps = JSON.parse(row.workflow_steps_json || '[]');
 
   return {
     id: row.id,
@@ -134,7 +162,15 @@ export function mapSubmissionRow(row, { publicBaseUrl = '', token = '' } = {}) {
     lessons: row.lessons,
     recommendations: row.recommendations,
     publicPrompt: Boolean(row.public_prompt),
-    files,
+    workflowSteps,
+    reviewStatus: row.review_status || 'pending',
+    promptStatus: row.prompt_status || 'pending',
+    featuredStatus: row.featured_status || 'pending',
+    score: Number(row.score || 0),
+    judgeNote: row.judge_note || '',
+    submissionFiles,
+    evidenceFiles,
+    files: [...submissionFiles, ...evidenceFiles],
   };
 }
 
@@ -167,4 +203,13 @@ function escapeCsvCell(value) {
   const text = String(value ?? '');
   if (!/[",\n\r]/.test(text)) return text;
   return `"${text.replaceAll('"', '""')}"`;
+}
+
+function normalizeWorkflowSteps(value) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return JSON.stringify(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return '[]';
+  }
 }

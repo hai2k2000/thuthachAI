@@ -13,10 +13,12 @@ import {
   Footer,
   Header,
   Icon,
+  InfoGrid,
   LeaderboardTable,
   PageContainer,
   Podium,
   PromptCard,
+  CopyPromptButton,
   PromptDetail,
   ResultsCount,
   SafetyChecklist,
@@ -26,6 +28,7 @@ import {
   StatCard,
   SubmissionCard,
   SubmissionDetail,
+  DetailSection,
   Timeline,
   Toast,
   ToolCard,
@@ -44,8 +47,6 @@ import {
   findPrompt,
   findSubmission,
   heroImage,
-  leaderboardItems,
-  mediaImage,
   promptCategories,
   promptDifficulties,
   promptStatuses,
@@ -113,6 +114,8 @@ function renderRoute(pathname: string, navigate: (href: string) => void, copy: (
       return <AiLabPage />;
     case '/contact':
       return <ContactPage />;
+    case '/admin':
+      return <AdminPage />;
     case '/search':
       return <SearchPage navigate={navigate} />;
     default:
@@ -128,7 +131,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
         <div className="heroCopy">
           <Badge tone="red">Trí tuệ nhân tạo trong tòa soạn</Badge>
           <h1>
-            MỖI TUẦN MỘT <span>THỬ THÁCH AI</span>
+            Mỗi tuần một <span>Thử thách AI</span>
           </h1>
           <p>Biến AI thành trợ lý công việc hằng ngày tại Tạp chí Thời đại.</p>
           <p className="heroSubcopy">Thử thách nhỏ mỗi tuần - Quy trình hay mỗi ngày - Tài nguyên chung cho toàn cơ quan.</p>
@@ -152,7 +155,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
         <StatCard value="05" label="Tuần thử thách" />
         <StatCard value="03" label="Nhóm nhiệm vụ" />
         <StatCard value="100" label="Điểm đánh giá" />
-        <StatCard value="500+" label="Kho prompt chung" accent />
+        <StatCard value="0" label="Prompt đã duyệt" accent />
       </section>
 
       <section className="band">
@@ -162,6 +165,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
           description="Phóng viên - biên tập viên nghiên cứu thể loại báo chí hiện đại; Tổng hợp xây dựng lưu trữ thông minh; Kinh doanh phát triển sản phẩm truyền thông thương mại hóa."
           action={<AppLink href="/challenges" navigate={navigate} className="ghostButton">Xem tất cả</AppLink>}
         />
+        <CountdownBanner targetDate="2026-07-06T15:00:00+07:00" />
         <div className="cardGrid three">
           {openChallenges.slice(0, 3).map((challenge) => (
             <ChallengeCard key={challenge.id} challenge={challenge} navigate={navigate} />
@@ -201,32 +205,8 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
       <section className="previewGrid">
         <div className="leaderMini card">
           <h2>Bảng vàng AI</h2>
-          {leaderboardItems.slice(0, 3).map((item) => (
-            <AppLink key={item.rank} href="/leaderboard" navigate={navigate}>
-              <span>#{item.rank}</span>
-              <strong>{item.name}</strong>
-              <em>{item.score} pts</em>
-            </AppLink>
-          ))}
+          <HomeLeaderboardPreview navigate={navigate} />
           <AppLink href="/leaderboard" navigate={navigate} className="ghostButton">Xem bảng xếp hạng</AppLink>
-        </div>
-        <div className="featuredQuote">
-          <Badge tone="red">Prompt hay nhất tuần</Badge>
-          <h2>"Trợ lý tóm tắt & phân loại phản hồi độc giả"</h2>
-          <p>Hãy đóng vai một biên tập viên dữ liệu có kinh nghiệm 10 năm. Dựa trên danh sách bình luận đính kèm...</p>
-          <span>Tác giả: Mai Anh - Ban Phóng viên</span>
-        </div>
-        <div className="wideFeature card">
-          <img src={mediaImage} alt="Bài dự thi tiêu biểu" />
-          <div>
-            <Badge tone="soft">Bài dự thi tiêu biểu</Badge>
-            <h2>Tự động hóa bản tin sáng</h2>
-            <p>Hệ thống dùng GPT-4o để quét 50 nguồn tin quốc tế, dịch thuật, tóm tắt và đóng gói vào nhóm Slack tòa soạn lúc 6h30 mỗi ngày.</p>
-            <div className="cardActions">
-              <AppLink href="/featured" navigate={navigate} className="primaryButton">Xem chi tiết</AppLink>
-              <AppLink href="/prompts" navigate={navigate} className="ghostButton">Sử dụng template này</AppLink>
-            </div>
-          </div>
         </div>
       </section>
     </PageContainer>
@@ -236,6 +216,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
 function ChallengesPage({ navigate }: { navigate: (href: string) => void }) {
   const [week, setWeek] = useState('Tất cả');
   const filtered = week === 'Tất cả' ? challenges : challenges.filter((challenge) => String(challenge.week) === week);
+  const isSpecialWeek = week === '5';
   return (
     <PageContainer>
       <Breadcrumb navigate={navigate} items={[{ label: 'Trang chủ', href: '/' }, { label: 'Thử thách' }]} />
@@ -245,11 +226,18 @@ function ChallengesPage({ navigate }: { navigate: (href: string) => void }) {
         description="Theo dõi nhiệm vụ, deadline, yêu cầu đầu ra và trạng thái từng tuần."
       />
       <WeekTabs activeWeek={week} onChange={setWeek} weeks={[1, 2, 3, 4, 5]} />
-      <div className="cardGrid three">
-        {filtered.map((challenge) => (
-          <ChallengeCard key={challenge.id} challenge={challenge} navigate={navigate} />
-        ))}
-      </div>
+      {filtered.length ? (
+        <div className="cardGrid three">
+          {filtered.map((challenge) => (
+            <ChallengeCard key={challenge.id} challenge={challenge} navigate={navigate} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title={isSpecialWeek ? 'Tuần đặc biệt sẽ công bố một đề chung' : 'Nội dung tuần này đang chờ công bố'}
+          description={isSpecialWeek ? 'Tuần 5 dành cho toàn cơ quan, không chia nhóm nhiệm vụ.' : 'Ban Tổ chức sẽ cập nhật đề bài chính thức trước khi mở nhận bài.'}
+        />
+      )}
       <CTABox navigate={navigate} />
     </PageContainer>
   );
@@ -264,6 +252,154 @@ function ChallengeDetailPage({ id, navigate }: { id: string; navigate: (href: st
       <ChallengeDetail challenge={challenge} navigate={navigate} />
     </PageContainer>
   );
+}
+
+type PublicLeaderboardItem = {
+  rank: number;
+  id: string;
+  name: string;
+  department: string;
+  submissionTitle: string;
+  week: string;
+  score: number;
+  award: string;
+  status: string;
+};
+
+type PublicDepartmentScore = {
+  department: string;
+  submissionCount: number;
+  averageScore: number;
+  featuredSubmission: string;
+};
+
+type PublicPromptItem = {
+  id: string;
+  title: string;
+  contributor: string;
+  department: string;
+  tool: string;
+  purpose: string;
+  fullPrompt: string;
+  week: string;
+  updatedAt: string;
+};
+
+type PublicFeaturedSubmission = {
+  id: string;
+  title: string;
+  participantName: string;
+  department: string;
+  week: string;
+  group: string;
+  aiTools: string;
+  problem: string;
+  processSummary: string;
+  finalResult: string;
+  score: number;
+  fileCount: number;
+  createdAt: string;
+};
+
+type AdminSubmission = PublicFeaturedSubmission & {
+  contact: string;
+  email: string;
+  challengeGroup: string;
+  lessons: string;
+  recommendations: string;
+  publicPrompt: boolean;
+  reviewStatus: string;
+  promptStatus: string;
+  featuredStatus: string;
+  judgeNote: string;
+  submissionFiles: Array<{ originalName: string; downloadUrl: string; size: number }>;
+  evidenceFiles: Array<{ originalName: string; downloadUrl: string; size: number }>;
+};
+
+type ContactMessage = {
+  id: string;
+  createdAt: string;
+  name: string;
+  department: string;
+  email: string;
+  message: string;
+  attachment: string;
+  status: string;
+};
+
+function CountdownBanner({ targetDate }: { targetDate: string }) {
+  const remaining = useCountdown(targetDate);
+  return (
+    <section className="countdownBanner" aria-live="polite">
+      <div>
+        <span>Thời gian còn lại</span>
+        <strong>{remaining.expired ? 'Đã hết hạn nộp bài' : `${remaining.days} ngày ${remaining.hours} giờ ${remaining.minutes} phút ${remaining.seconds} giây`}</strong>
+      </div>
+      <AppLink href="/submit" navigate={(href) => {
+        window.history.pushState({}, '', href);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }} className="darkButton">Nộp bài tuần 1</AppLink>
+    </section>
+  );
+}
+
+function HomeLeaderboardPreview({ navigate }: { navigate: (href: string) => void }) {
+  const [items, setItems] = useState<PublicLeaderboardItem[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/public/leaderboard')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load leaderboard')))
+      .then((data: { items?: PublicLeaderboardItem[] }) => {
+        if (active) setItems(data.items ?? []);
+      })
+      .catch(() => {
+        if (active) setItems([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (!items.length) {
+    return (
+      <div className="leaderMiniEmpty">
+        <Icon name="leaderboard" />
+        <span>Chờ Ban giám khảo chấm điểm bài dự thi đầu tiên.</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {items.slice(0, 3).map((item) => (
+        <AppLink key={item.id} href="/leaderboard" navigate={navigate}>
+          <span>#{item.rank}</span>
+          <strong>{item.name}</strong>
+          <em>{item.score} pts</em>
+        </AppLink>
+      ))}
+    </>
+  );
+}
+
+function useCountdown(targetDate: string) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const total = Math.max(0, new Date(targetDate).getTime() - now);
+  const totalSeconds = Math.floor(total / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return { expired: total <= 0, days, hours, minutes, seconds };
 }
 
 type SubmissionFormState = {
@@ -284,6 +420,13 @@ type SubmissionFormState = {
   publicPrompt: boolean;
 };
 
+type WorkflowStep = {
+  content: string;
+  tools: string;
+  prompt: string;
+  response: string;
+};
+
 type SubmitStatus =
   | { state: 'idle' }
   | { state: 'submitting' }
@@ -291,8 +434,10 @@ type SubmitStatus =
   | { state: 'error'; message: string };
 
 const maxEvidenceFiles = 5;
+const maxSubmissionFiles = 3;
 const maxEvidenceFileSizeMb = 25;
 const maxEvidenceFileSizeBytes = maxEvidenceFileSizeMb * 1024 * 1024;
+const initialWorkflowStep: WorkflowStep = { content: '', tools: '', prompt: '', response: '' };
 
 const initialSubmissionForm: SubmissionFormState = {
   participantName: '',
@@ -334,33 +479,53 @@ const requiredSubmissionFields: Array<[keyof SubmissionFormState, string]> = [
   ['department', 'Vui lòng chọn đơn vị.'],
   ['contact', 'Vui lòng nhập email hoặc số điện thoại.'],
   ['title', 'Vui lòng nhập tên bài dự thi.'],
-  ['aiTools', 'Vui lòng nhập công cụ AI đã dùng.'],
-  ['processSummary', 'Vui lòng tóm tắt nhật ký tương tác với AI.'],
-  ['mainPrompt', 'Vui lòng nhập bộ prompt hoặc hệ thống câu hỏi chính.'],
-  ['finalResult', 'Vui lòng nhập kết quả cuối cùng và lý do lựa chọn.'],
+  ['problem', 'Vui lòng nhập nội dung bài dự thi.'],
+  ['aiTools', 'Vui lòng nhập các công cụ AI đã dùng.'],
 ];
 
 function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
   const [form, setForm] = useState<SubmissionFormState>(initialSubmissionForm);
-  const [files, setFiles] = useState<File[]>([]);
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([initialWorkflowStep]);
+  const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
-  const [fileInputKey, setFileInputKey] = useState(0);
+  const [submissionFileInputKey, setSubmissionFileInputKey] = useState(0);
+  const [evidenceFileInputKey, setEvidenceFileInputKey] = useState(0);
 
   function updateField<Key extends keyof SubmissionFormState>(field: Key, value: SubmissionFormState[Key]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  function updateWorkflowStep(index: number, field: keyof WorkflowStep, value: string) {
+    setWorkflowSteps((current) => current.map((step, stepIndex) => (stepIndex === index ? { ...step, [field]: value } : step)));
+  }
+
+  function addWorkflowStep() {
+    setWorkflowSteps((current) => [...current, { ...initialWorkflowStep }]);
+  }
+
+  function removeWorkflowStep(index: number) {
+    setWorkflowSteps((current) => (current.length === 1 ? current : current.filter((_, stepIndex) => stepIndex !== index)));
+  }
+
+  function handleSubmissionFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const errors = validateEvidenceFiles(selectedFiles);
-    setFiles(selectedFiles.slice(0, maxEvidenceFiles));
+    const errors = validateUploadedFiles(selectedFiles, maxSubmissionFiles, 'file bài dự thi');
+    setSubmissionFiles(selectedFiles.slice(0, maxSubmissionFiles));
+    setStatus(errors.length ? { state: 'error', message: errors.join(' ') } : { state: 'idle' });
+  }
+
+  function handleEvidenceFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const errors = validateUploadedFiles(selectedFiles, maxEvidenceFiles, 'file minh chứng');
+    setEvidenceFiles(selectedFiles.slice(0, maxEvidenceFiles));
     setStatus(errors.length ? { state: 'error', message: errors.join(' ') } : { state: 'idle' });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const validationErrors = validateSubmissionForm(form, files);
+    const validationErrors = validateSubmissionForm(form, workflowSteps, submissionFiles, evidenceFiles);
     if (validationErrors.length) {
       setStatus({ state: 'error', message: validationErrors.join(' ') });
       return;
@@ -369,10 +534,28 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
     setStatus({ state: 'submitting' });
 
     const payload = new FormData();
-    for (const [field, value] of Object.entries(form)) {
+    const workflowSummary = formatWorkflowSteps(workflowSteps);
+    const firstPrompt = workflowSteps.map((step) => step.prompt.trim()).find(Boolean) || workflowSummary;
+    const payloadForm = {
+      ...form,
+      processSummary: workflowSummary,
+      mainPrompt: firstPrompt,
+      finalResult: workflowSummary,
+      workflowSteps: JSON.stringify(workflowSteps.map((step) => ({
+        content: step.content.trim(),
+        tools: step.tools.trim(),
+        prompt: step.prompt.trim(),
+        response: step.response.trim(),
+      }))),
+    };
+
+    for (const [field, value] of Object.entries(payloadForm)) {
       payload.append(field, typeof value === 'boolean' ? String(value) : value);
     }
-    for (const file of files) {
+    for (const file of submissionFiles) {
+      payload.append('submissionFiles', file);
+    }
+    for (const file of evidenceFiles) {
       payload.append('evidenceFiles', file);
     }
 
@@ -388,8 +571,11 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
       }
 
       setForm(initialSubmissionForm);
-      setFiles([]);
-      setFileInputKey((current) => current + 1);
+      setWorkflowSteps([{ ...initialWorkflowStep }]);
+      setSubmissionFiles([]);
+      setEvidenceFiles([]);
+      setSubmissionFileInputKey((current) => current + 1);
+      setEvidenceFileInputKey((current) => current + 1);
       setStatus({
         state: 'success',
         receiptId: result.id,
@@ -407,7 +593,7 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
         <div>
           <Badge tone="red">Form nộp bài trực tiếp</Badge>
           <h1>Nộp bài dự thi</h1>
-          <p>Gửi bài, prompt chính, kết quả cuối cùng và file minh chứng trực tiếp về hệ thống của Tạp chí Thời đại.</p>
+          <p>Gửi nội dung bài dự thi, nhật ký tác nghiệp và file minh chứng trực tiếp về hệ thống của Tạp chí Thời đại.</p>
         </div>
         <div className="submitHeroPanel">
           <Icon name="cloud_upload" />
@@ -433,11 +619,11 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
           <div className="formGrid">
             <label className="formField">
               <span>Họ và tên <b>*</b></span>
-              <input value={form.participantName} onChange={(event) => updateField('participantName', event.target.value)} />
+              <input name="participantName" autoComplete="name" value={form.participantName} onChange={(event) => updateField('participantName', event.target.value)} />
             </label>
             <label className="formField">
               <span>Đơn vị <b>*</b></span>
-              <select value={form.department} onChange={(event) => updateField('department', event.target.value)}>
+              <select name="department" value={form.department} onChange={(event) => updateField('department', event.target.value)}>
                 <option value="">Chọn đơn vị</option>
                 {departmentOptions.map((department) => (
                   <option key={department}>{department}</option>
@@ -446,15 +632,15 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
             </label>
             <label className="formField">
               <span>Email hoặc số điện thoại <b>*</b></span>
-              <input value={form.contact} onChange={(event) => updateField('contact', event.target.value)} />
+              <input name="contact" autoComplete="email" value={form.contact} onChange={(event) => updateField('contact', event.target.value)} />
             </label>
             <label className="formField">
               <span>Email nhận phản hồi</span>
-              <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} />
+              <input name="email" type="email" autoComplete="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} />
             </label>
             <label className="formField">
               <span>Tuần thử thách <b>*</b></span>
-              <select value={form.week} onChange={(event) => updateField('week', event.target.value)}>
+              <select name="week" value={form.week} onChange={(event) => updateField('week', event.target.value)}>
                 {challengeWeeks.map((week) => (
                   <option key={week.week} value={String(week.week)}>Tuần {week.week}: {week.title}</option>
                 ))}
@@ -462,7 +648,7 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
             </label>
             <label className="formField">
               <span>Nhóm nhiệm vụ</span>
-              <select value={form.challengeGroup} onChange={(event) => updateField('challengeGroup', event.target.value)}>
+              <select name="challengeGroup" value={form.challengeGroup} onChange={(event) => updateField('challengeGroup', event.target.value)}>
                 {challengeGroupOptions.map((group) => (
                   <option key={group}>{group}</option>
                 ))}
@@ -470,64 +656,98 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
             </label>
             <label className="formField full">
               <span>Tên bài dự thi <b>*</b></span>
-              <input value={form.title} onChange={(event) => updateField('title', event.target.value)} />
-            </label>
-            <label className="formField">
-              <span>Công cụ AI sử dụng <b>*</b></span>
-              <input value={form.aiTools} onChange={(event) => updateField('aiTools', event.target.value)} placeholder="Tên nền tảng, phiên bản hoặc gói dịch vụ nếu có" />
-            </label>
-            <label className="formField">
-              <span>Chủ đề hoặc nhiệm vụ thực hiện</span>
-              <input value={form.problem} onChange={(event) => updateField('problem', event.target.value)} />
+              <input name="title" value={form.title} onChange={(event) => updateField('title', event.target.value)} />
             </label>
             <label className="formField full">
-              <span>Bộ prompt hoặc hệ thống câu hỏi chính <b>*</b></span>
-              <textarea rows={6} value={form.mainPrompt} onChange={(event) => updateField('mainPrompt', event.target.value)} />
+              <span>Nội dung bài dự thi <b>*</b></span>
+              <textarea name="problem" rows={6} value={form.problem} onChange={(event) => updateField('problem', event.target.value)} />
+              <small>Tóm tắt nội dung chính của bài dự thi hoặc sản phẩm nộp kèm.</small>
             </label>
             <label className="formField full">
-              <span>Tóm tắt nhật ký tương tác với AI <b>*</b></span>
-              <textarea rows={5} value={form.processSummary} onChange={(event) => updateField('processSummary', event.target.value)} />
-              <small>Nêu mục tiêu từng bước, nội dung trao đổi, kết quả AI trả về và quá trình đánh giá, lựa chọn, điều chỉnh; không sao chép toàn bộ đoạn chat.</small>
+              <span>File bài dự thi <b>*</b></span>
+              <input
+                key={submissionFileInputKey}
+                name="submissionFiles"
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.webp,.ppt,.pptx,.zip,.rar"
+                onChange={handleSubmissionFileChange}
+              />
+              <small>Tối đa {maxSubmissionFiles} file bài dự thi, mỗi file không quá {maxEvidenceFileSizeMb}MB.</small>
             </label>
             <label className="formField full">
-              <span>Kết quả cuối cùng và lý do lựa chọn phương án <b>*</b></span>
-              <textarea rows={5} value={form.finalResult} onChange={(event) => updateField('finalResult', event.target.value)} />
+              <span>Các công cụ AI sử dụng <b>*</b></span>
+              <input name="aiTools" value={form.aiTools} onChange={(event) => updateField('aiTools', event.target.value)} placeholder="Ví dụ: ChatGPT, Gemini, Claude, Canva..." />
             </label>
+            <div className="formField full">
+              <span>Nhật ký tác nghiệp <b>*</b></span>
+              <div className="workflowSteps">
+                {workflowSteps.map((step, index) => (
+                  <article key={index} className="workflowStep">
+                    <div className="workflowStepHeader">
+                      <strong>Bước {index + 1}</strong>
+                      {workflowSteps.length > 1 ? (
+                        <button type="button" className="iconButton" aria-label={`Xóa bước ${index + 1}`} onClick={() => removeWorkflowStep(index)}>
+                          <Icon name="delete" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <label>
+                      <span>Nội dung thực hiện</span>
+                      <textarea name={`workflowStep${index + 1}Content`} rows={3} value={step.content} onChange={(event) => updateWorkflowStep(index, 'content', event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Công cụ AI sử dụng</span>
+                      <input name={`workflowStep${index + 1}Tools`} value={step.tools} onChange={(event) => updateWorkflowStep(index, 'tools', event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Prompt sử dụng</span>
+                      <textarea name={`workflowStep${index + 1}Prompt`} rows={4} value={step.prompt} onChange={(event) => updateWorkflowStep(index, 'prompt', event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Mô tả đáp án AI đưa ra, quá trình tương tác, chọn lọc, nêu lý do lựa chọn kết quả</span>
+                      <textarea name={`workflowStep${index + 1}Response`} rows={4} value={step.response} onChange={(event) => updateWorkflowStep(index, 'response', event.target.value)} />
+                      <small>Không copy nguyên văn toàn bộ phần trả lời của AI.</small>
+                    </label>
+                  </article>
+                ))}
+              </div>
+              <button type="button" className="softButton addStepButton" onClick={addWorkflowStep}>
+                <Icon name="add" /> Thêm bước
+              </button>
+            </div>
             <label className="formField">
               <span>Bài học kinh nghiệm</span>
-              <textarea rows={4} value={form.lessons} onChange={(event) => updateField('lessons', event.target.value)} />
+              <textarea name="lessons" rows={4} value={form.lessons} onChange={(event) => updateField('lessons', event.target.value)} />
             </label>
             <label className="formField">
               <span>Kiến nghị, đề xuất hoặc phương pháp tương tác với AI</span>
-              <textarea rows={4} value={form.recommendations} onChange={(event) => updateField('recommendations', event.target.value)} />
+              <textarea name="recommendations" rows={4} value={form.recommendations} onChange={(event) => updateField('recommendations', event.target.value)} />
             </label>
             <label className="formField full">
               <span>File minh chứng <b>*</b></span>
               <input
-                key={fileInputKey}
+                key={evidenceFileInputKey}
+                name="evidenceFiles"
                 type="file"
                 multiple
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.webp,.ppt,.pptx,.zip,.rar"
-                onChange={handleFileChange}
+                onChange={handleEvidenceFileChange}
               />
               <small>Tối đa {maxEvidenceFiles} file, mỗi file không quá {maxEvidenceFileSizeMb}MB.</small>
             </label>
           </div>
 
-          {files.length ? (
-            <ul className="selectedFiles">
-              {files.map((file) => (
-                <li key={`${file.name}-${file.size}`}>
-                  <Icon name="draft" />
-                  <span>{file.name}</span>
-                  <em>{formatFileSize(file.size)}</em>
-                </li>
-              ))}
-            </ul>
+          {submissionFiles.length ? (
+            <FileList title="File bài dự thi đã chọn" files={submissionFiles} />
+          ) : null}
+
+          {evidenceFiles.length ? (
+            <FileList title="File minh chứng đã chọn" files={evidenceFiles} />
           ) : null}
 
           <label className="checkboxField">
-            <input type="checkbox" checked={form.publicPrompt} onChange={(event) => updateField('publicPrompt', event.target.checked)} />
+            <input name="publicPrompt" type="checkbox" checked={form.publicPrompt} onChange={(event) => updateField('publicPrompt', event.target.checked)} />
             <span>Đồng ý để Ban tổ chức biên tập prompt tốt vào Kho Prompt nội bộ.</span>
           </label>
 
@@ -563,24 +783,48 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
   );
 }
 
-function validateSubmissionForm(form: SubmissionFormState, files: File[]) {
+function FileList({ title, files }: { title: string; files: File[] }) {
+  return (
+    <div className="fileListGroup">
+      <strong>{title}</strong>
+      <ul className="selectedFiles">
+        {files.map((file) => (
+          <li key={`${file.name}-${file.size}`}>
+            <Icon name="draft" />
+            <span>{file.name}</span>
+            <em>{formatFileSize(file.size)}</em>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function validateSubmissionForm(form: SubmissionFormState, workflowSteps: WorkflowStep[], submissionFiles: File[], evidenceFiles: File[]) {
   const errors: string[] = [];
   for (const [field, message] of requiredSubmissionFields) {
     if (!String(form[field]).trim()) {
       errors.push(message);
     }
   }
-  errors.push(...validateEvidenceFiles(files));
+  if (!hasCompleteWorkflowStep(workflowSteps)) {
+    errors.push('Vui lòng nhập ít nhất một bước nhật ký tác nghiệp có nội dung, công cụ, prompt và mô tả kết quả.');
+  }
+  if (!submissionFiles.length) {
+    errors.push('Vui lòng tải lên ít nhất một file bài dự thi.');
+  }
+  if (!evidenceFiles.length) {
+    errors.push('Vui lòng tải lên ít nhất một file minh chứng.');
+  }
+  errors.push(...validateUploadedFiles(submissionFiles, maxSubmissionFiles, 'file bài dự thi'));
+  errors.push(...validateUploadedFiles(evidenceFiles, maxEvidenceFiles, 'file minh chứng'));
   return errors;
 }
 
-function validateEvidenceFiles(files: File[]) {
+function validateUploadedFiles(files: File[], limit: number, label: string) {
   const errors: string[] = [];
-  if (!files.length) {
-    errors.push('Vui lòng tải lên ít nhất một file minh chứng.');
-  }
-  if (files.length > maxEvidenceFiles) {
-    errors.push(`Mỗi lần gửi tối đa ${maxEvidenceFiles} file.`);
+  if (files.length > limit) {
+    errors.push(`Mỗi lần gửi tối đa ${limit} ${label}.`);
   }
   if (files.some((file) => file.size > maxEvidenceFileSizeBytes)) {
     errors.push(`Mỗi file không được vượt quá ${maxEvidenceFileSizeMb}MB.`);
@@ -588,10 +832,45 @@ function validateEvidenceFiles(files: File[]) {
   return errors;
 }
 
+function hasCompleteWorkflowStep(steps: WorkflowStep[]) {
+  return steps.some((step) => step.content.trim() && step.tools.trim() && step.prompt.trim() && step.response.trim());
+}
+
+function formatWorkflowSteps(steps: WorkflowStep[]) {
+  return steps
+    .filter((step) => step.content.trim() || step.tools.trim() || step.prompt.trim() || step.response.trim())
+    .map((step, index) => [
+      `Bước ${index + 1}`,
+      `Nội dung thực hiện: ${step.content.trim()}`,
+      `Công cụ AI sử dụng: ${step.tools.trim()}`,
+      `Prompt sử dụng: ${step.prompt.trim()}`,
+      `Mô tả đáp án/quá trình chọn lọc: ${step.response.trim()}`,
+    ].filter((line) => !line.endsWith(': ')).join('\n'))
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function splitList(value: string) {
+  return String(value || '')
+    .split(/[,;|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || 'Chưa cập nhật';
+  return new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'Asia/Bangkok',
+  }).format(date);
 }
 
 function RulesPage({ navigate }: { navigate: (href: string) => void }) {
@@ -611,7 +890,7 @@ function RulesPage({ navigate }: { navigate: (href: string) => void }) {
           ['Điều 2. Đối tượng tham gia', 'Toàn thể cán bộ, nhân viên, phóng viên, biên tập viên Tạp chí Thời đại; khuyến khích cán bộ lãnh đạo tham gia. Đây là yếu tố đánh giá tinh thần triển khai chuyển đổi số và thi đua cuối kỳ, cuối năm.'],
           ['Điều 3. Thời gian tổ chức', 'Cuộc thi diễn ra từ ngày 01/7/2026 đến hết ngày 03/8/2026, gồm 05 tuần. Ban Tổ chức công bố chủ đề vào Thứ Tư, nhận bài dự thi vào Thứ Hai hằng tuần và trao giải tuần vào Thứ Tư hằng tuần.'],
           ['Điều 4. Nội dung cuộc thi', 'Hằng tuần, Ban Tổ chức công bố một chủ đề hoặc đầu việc thực tế gắn với hoạt động chuyên môn của cơ quan. Người tham gia sử dụng các công cụ AI để thực hiện thử thách theo chủ đề được giao.'],
-          ['Điều 5. Yêu cầu bài dự thi', 'Bài dự thi cần có thông tin người dự thi, chủ đề hoặc nhiệm vụ, công cụ AI, bộ prompt hoặc hệ thống câu hỏi chính, tóm tắt nhật ký tương tác, kết quả cuối cùng và lý do lựa chọn, bài học kinh nghiệm, kiến nghị và phương pháp tương tác với AI.'],
+          ['Điều 5. Yêu cầu bài dự thi', 'Bài dự thi cần có thông tin người dự thi, tên và nội dung bài dự thi, file bài dự thi, các công cụ AI đã sử dụng, nhật ký tác nghiệp theo từng bước, file minh chứng, bài học kinh nghiệm, kiến nghị và phương pháp tương tác với AI.'],
           ['Điều 8. Tổ chức thực hiện', 'Lãnh đạo Tạp chí chỉ đạo chung; Ban Biên tập đánh giá bài dự thi theo tiêu chí đã ban hành và đề xuất trao giải. Đầu mối tiếp nhận, tổng hợp và hỗ trợ kỹ thuật: Đồng chí Vũ Mai Anh, 0948.898.496, vumaianh001024@gmail.com.'],
         ].map(([title, text]) => (
           <article key={title} className="card">
@@ -659,21 +938,40 @@ function PromptsPage({ navigate, onCopy }: { navigate: (href: string) => void; o
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('Tất cả');
   const [tool, setTool] = useState('Tất cả');
-  const [difficulty, setDifficulty] = useState('Tất cả');
-  const [status, setStatus] = useState('Tất cả');
+  const [publicPrompts, setPublicPrompts] = useState<PublicPromptItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/public/prompts')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load prompts')))
+      .then((data: { prompts?: PublicPromptItem[] }) => {
+        if (active) setPublicPrompts(data.prompts ?? []);
+      })
+      .catch(() => {
+        if (active) setPublicPrompts([]);
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const categories = useMemo(() => ['Tất cả', ...Array.from(new Set(publicPrompts.map((prompt) => prompt.department).filter(Boolean)))], [publicPrompts]);
+  const tools = useMemo(() => ['Tất cả', ...Array.from(new Set(publicPrompts.flatMap((prompt) => splitList(prompt.tool))))], [publicPrompts]);
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase();
-    return prompts.filter((prompt) => {
-      const text = `${prompt.title} ${prompt.purpose} ${prompt.tags.join(' ')} ${prompt.department} ${prompt.contributor}`.toLowerCase();
+    return publicPrompts.filter((prompt) => {
+      const text = `${prompt.title} ${prompt.purpose} ${prompt.department} ${prompt.contributor} ${prompt.tool}`.toLowerCase();
       return (
         (!keyword || text.includes(keyword)) &&
-        (category === 'Tất cả' || prompt.category === category) &&
-        (tool === 'Tất cả' || prompt.tool === tool) &&
-        (difficulty === 'Tất cả' || prompt.difficulty === difficulty) &&
-        (status === 'Tất cả' || prompt.status === status)
+        (category === 'Tất cả' || prompt.department === category) &&
+        (tool === 'Tất cả' || splitList(prompt.tool).includes(tool))
       );
     });
-  }, [query, category, tool, difficulty, status]);
+  }, [publicPrompts, query, category, tool]);
 
   return (
     <PageContainer>
@@ -681,24 +979,40 @@ function PromptsPage({ navigate, onCopy }: { navigate: (href: string) => void; o
       <SectionHeading
         eyebrow="Kho Prompt Thời đại"
         title="Tài nguyên dùng chung cho toàn cơ quan"
-        description="Tìm kiếm, lọc và sao chép prompt đã kiểm chứng hoặc đang thử nghiệm."
+        description="Chỉ hiển thị prompt đã được Ban tổ chức duyệt từ các bài dự thi gửi lên hệ thống."
         action={<ResultsCount count={filtered.length} label="prompt" />}
       />
       <FilterPanel>
         <SearchInput value={query} onChange={setQuery} placeholder="Tìm prompt, tag, người chia sẻ..." />
-        <SelectFilter label="Nhóm chuyên môn" value={category} options={promptCategories} onChange={setCategory} />
-        <SelectFilter label="Công cụ" value={tool} options={promptTools} onChange={setTool} />
-        <SelectFilter label="Mức độ" value={difficulty} options={promptDifficulties} onChange={setDifficulty} />
-        <SelectFilter label="Trạng thái" value={status} options={promptStatuses} onChange={setStatus} />
+        <SelectFilter label="Phòng/ban" value={category} options={categories.length > 1 ? categories : promptCategories.slice(0, 1)} onChange={setCategory} />
+        <SelectFilter label="Công cụ" value={tool} options={tools.length > 1 ? tools : promptTools.slice(0, 1)} onChange={setTool} />
       </FilterPanel>
       {filtered.length ? (
         <div className="cardGrid two">
           {filtered.map((prompt) => (
-            <PromptCard key={prompt.id} prompt={prompt} navigate={navigate} onCopy={onCopy} />
+            <article key={prompt.id} className="card promptCard">
+              <div className="cardMeta">
+                <Badge tone="red">Đã duyệt</Badge>
+                <Badge tone="cyan">{prompt.tool || 'AI'}</Badge>
+              </div>
+              <h3>{prompt.title}</h3>
+              <p>{prompt.purpose}</p>
+              <div className="infoGrid">
+                <div><dt>Người chia sẻ</dt><dd>{prompt.contributor}</dd></div>
+                <div><dt>Phòng/ban</dt><dd>{prompt.department}</dd></div>
+                <div><dt>Tuần</dt><dd>Tuần {prompt.week}</dd></div>
+                <div><dt>Cập nhật</dt><dd>{formatDateTime(prompt.updatedAt)}</dd></div>
+              </div>
+              <pre className="promptBlock">{prompt.fullPrompt}</pre>
+              <CopyPromptButton text={prompt.fullPrompt} onCopy={onCopy} />
+            </article>
           ))}
         </div>
       ) : (
-        <EmptyState title="Không tìm thấy prompt phù hợp" description="Thử đổi từ khóa hoặc bỏ bớt bộ lọc." />
+        <EmptyState
+          title={loaded ? 'Chưa có prompt được duyệt' : 'Đang tải kho prompt'}
+          description={loaded ? 'Prompt từ bài dự thi sẽ xuất hiện tại đây sau khi Ban tổ chức duyệt chất lượng.' : 'Hệ thống đang kiểm tra dữ liệu đã duyệt.'}
+        />
       )}
     </PageContainer>
   );
@@ -718,29 +1032,40 @@ function PromptDetailPage({ id, navigate, onCopy }: { id: string; navigate: (hre
 function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
   const [query, setQuery] = useState('');
   const [week, setWeek] = useState('Tất cả');
-  const [group, setGroup] = useState('Tất cả');
   const [department, setDepartment] = useState('Tất cả');
-  const [award, setAward] = useState('Tất cả');
-  const [scalable, setScalable] = useState('Tất cả');
-  const [promptPublic, setPromptPublic] = useState('Tất cả');
-  const groups = ['Tất cả', ...Array.from(new Set(submissions.map((item) => item.group)))];
-  const departments = ['Tất cả', ...Array.from(new Set(submissions.map((item) => item.department)))];
-  const awards = ['Tất cả', ...Array.from(new Set(submissions.map((item) => item.award)))];
+  const [publicSubmissions, setPublicSubmissions] = useState<PublicFeaturedSubmission[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/public/featured')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load featured submissions')))
+      .then((data: { submissions?: PublicFeaturedSubmission[] }) => {
+        if (active) setPublicSubmissions(data.submissions ?? []);
+      })
+      .catch(() => {
+        if (active) setPublicSubmissions([]);
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const departments = useMemo(() => ['Tất cả', ...Array.from(new Set(publicSubmissions.map((item) => item.department).filter(Boolean)))], [publicSubmissions]);
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase();
-    return submissions.filter((submission) => {
-      const text = `${submission.title} ${submission.participantName} ${submission.department} ${submission.tags.join(' ')} ${submission.problem}`.toLowerCase();
+    return publicSubmissions.filter((submission) => {
+      const text = `${submission.title} ${submission.participantName} ${submission.department} ${submission.problem}`.toLowerCase();
       return (
         (!keyword || text.includes(keyword)) &&
         (week === 'Tất cả' || String(submission.week) === week) &&
-        (group === 'Tất cả' || submission.group === group) &&
-        (department === 'Tất cả' || submission.department === department) &&
-        (award === 'Tất cả' || submission.award === award) &&
-        (scalable === 'Tất cả' || (scalable === 'Có thể nhân rộng' ? submission.isScalable : !submission.isScalable)) &&
-        (promptPublic === 'Tất cả' || (promptPublic === 'Có prompt công khai' ? submission.isPromptPublic : !submission.isPromptPublic))
+        (department === 'Tất cả' || submission.department === department)
       );
     });
-  }, [query, week, group, department, award, scalable, promptPublic]);
+  }, [publicSubmissions, query, week, department]);
 
   return (
     <PageContainer>
@@ -748,26 +1073,44 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
       <SectionHeading
         eyebrow="Bài dự thi tiêu biểu"
         title="Những quy trình AI có thể học hỏi"
-        description="Lọc theo tuần thi, nhóm nhiệm vụ, phòng ban, danh hiệu, khả năng nhân rộng và prompt công khai."
+        description="Chỉ hiển thị bài đã được Ban tổ chức duyệt thủ công để chia sẻ cho toàn cơ quan."
         action={<ResultsCount count={filtered.length} label="bài" />}
       />
       <FilterPanel>
         <SearchInput value={query} onChange={setQuery} placeholder="Tìm bài, người thực hiện, tag..." />
         <SelectFilter label="Tuần thi" value={week} options={['Tất cả', '1', '2', '3', '4', '5']} onChange={setWeek} />
-        <SelectFilter label="Nhóm nhiệm vụ" value={group} options={groups} onChange={setGroup} />
         <SelectFilter label="Phòng/ban" value={department} options={departments} onChange={setDepartment} />
-        <SelectFilter label="Danh hiệu" value={award} options={awards} onChange={setAward} />
-        <SelectFilter label="Nhân rộng" value={scalable} options={['Tất cả', 'Có thể nhân rộng', 'Chưa nhân rộng']} onChange={setScalable} />
-        <SelectFilter label="Prompt" value={promptPublic} options={['Tất cả', 'Có prompt công khai', 'Chưa công khai prompt']} onChange={setPromptPublic} />
       </FilterPanel>
       {filtered.length ? (
         <div className="cardGrid two">
           {filtered.map((submission) => (
-            <SubmissionCard key={submission.id} submission={submission} navigate={navigate} />
+            <article key={submission.id} className="card submissionCard approvedSubmissionCard">
+              <div className="cardBody">
+                <div className="cardMeta">
+                  <Badge tone="red">Đã duyệt</Badge>
+                  <span>{submission.score} pts</span>
+                </div>
+                <h3>{submission.title}</h3>
+                <p>{submission.problem}</p>
+                <InfoGrid
+                  items={[
+                    ['Người thực hiện', submission.participantName],
+                    ['Phòng/ban', submission.department],
+                    ['Tuần thi', `Tuần ${submission.week}`],
+                    ['Nhóm', submission.group],
+                  ]}
+                />
+                <DetailSection title="Nhật ký tác nghiệp tóm tắt" items={[submission.processSummary]} />
+                <DetailSection title="Kết quả chia sẻ" items={[submission.finalResult || 'Đã có file bài dự thi đính kèm trong hệ thống.']} />
+              </div>
+            </article>
           ))}
         </div>
       ) : (
-        <EmptyState title="Không tìm thấy bài tiêu biểu" description="Thử thay đổi bộ lọc hoặc từ khóa." />
+        <EmptyState
+          title={loaded ? 'Chưa có bài tiêu biểu được duyệt' : 'Đang tải bài tiêu biểu'}
+          description={loaded ? 'Bài dự thi sẽ xuất hiện tại đây sau khi Ban tổ chức chọn và duyệt thủ công.' : 'Hệ thống đang kiểm tra dữ liệu đã duyệt.'}
+        />
       )}
     </PageContainer>
   );
@@ -786,12 +1129,41 @@ function FeaturedDetailPage({ id, navigate }: { id: string; navigate: (href: str
 
 function LeaderboardPage() {
   const [tab, setTab] = useState('1');
-  const visibleItems = tab === 'Tổng kết' ? leaderboardItems : leaderboardItems.filter((item) => String(item.week) === tab);
+  const [items, setItems] = useState<PublicLeaderboardItem[]>([]);
+  const [departments, setDepartments] = useState<PublicDepartmentScore[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/public/leaderboard')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load leaderboard')))
+      .then((data: { items?: PublicLeaderboardItem[]; departments?: PublicDepartmentScore[] }) => {
+        if (!active) return;
+        setItems(data.items ?? []);
+        setDepartments(data.departments ?? []);
+      })
+      .catch(() => {
+        if (!active) return;
+        setItems([]);
+        setDepartments([]);
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  const visibleItems = tab === 'Tổng kết' ? items : items.filter((item) => String(item.week) === tab);
+  const visibleLeaderboardItems = visibleItems.map((item) => ({
+    ...item,
+    week: Number(item.week) || 0,
+    badge: 'AI Starter',
+  }));
   const stats = [
-    ['Tổng số bài dự thi', String(submissions.length)],
-    ['Prompt đã chia sẻ', String(prompts.length)],
-    ['Phòng/ban tham gia', String(departmentScores.length)],
-    ['Bài có khả năng nhân rộng', String(submissions.filter((item) => item.isScalable).length)],
+    ['Bài đã chấm điểm', String(items.length)],
+    ['Phòng/ban có điểm', String(departments.length)],
+    ['Điểm cao nhất', String(items[0]?.score ?? 0)],
+    ['Bài đang dẫn đầu', items[0]?.submissionTitle || 'Chờ cập nhật'],
   ];
   return (
     <PageContainer>
@@ -808,20 +1180,26 @@ function LeaderboardPage() {
           </button>
         ))}
       </div>
-      <Podium items={visibleItems.length ? visibleItems : leaderboardItems} />
-      <SectionHeading title="Bảng xếp hạng cá nhân/nhóm" />
-      <LeaderboardTable items={visibleItems.length ? visibleItems : leaderboardItems} />
+      {visibleLeaderboardItems.length ? (
+        <>
+          <Podium items={visibleLeaderboardItems} />
+          <SectionHeading title="Bảng xếp hạng cá nhân/nhóm" />
+          <LeaderboardTable items={visibleLeaderboardItems} />
+        </>
+      ) : (
+        <EmptyState
+          title={loaded ? 'Chưa có điểm để xếp hạng' : 'Đang tải bảng vàng'}
+          description={loaded ? 'Bảng vàng sẽ tự động sắp xếp khi Ban giám khảo nhập điểm trong dashboard.' : 'Hệ thống đang kiểm tra dữ liệu điểm.'}
+        />
+      )}
       <SectionHeading title="Bảng xếp hạng phòng/ban" />
-      <DepartmentLeaderboard items={departmentScores} />
-      <section className="honorGrid">
-        {['Giải Nhất tuần', 'Giải Ứng dụng hiệu quả', 'Giải Ứng dụng sáng tạo', 'Prompt hay nhất tuần', 'Quy trình có khả năng nhân rộng', 'Cá nhân lan tỏa AI'].map((item) => (
-          <article key={item} className="card">
-            <Icon name="emoji_events" />
-            <strong>{item}</strong>
-            <span>{leaderboardItems.find((entry) => entry.award === item)?.name || 'Đang cập nhật'}</span>
-          </article>
-        ))}
-      </section>
+      {departments.length ? <DepartmentLeaderboard items={departments.map((item) => ({
+        department: item.department,
+        submissionCount: item.submissionCount,
+        promptCount: 0,
+        averageScore: item.averageScore,
+        featuredSubmission: item.featuredSubmission,
+      }))} /> : <EmptyState title="Chưa có điểm phòng/ban" description="Số liệu sẽ tự tổng hợp sau khi có bài được chấm." />}
       <SectionHeading title="Badge/huy hiệu" />
       <BadgeGrid items={badges} />
     </PageContainer>
@@ -871,21 +1249,43 @@ function AiLabPage() {
         </div>
         <SafetyChecklist />
       </section>
-      <SectionHeading title="Mẫu prompt cơ bản" description="Sao chép và tùy chỉnh để bắt đầu công việc ngay lập tức." />
-      <div className="basicPrompts">
-        {prompts.slice(0, 3).map((prompt) => (
-          <article key={prompt.id}>
-            <Badge tone="soft">{prompt.category}</Badge>
-            <h3>{prompt.title.replace('Prompt ', '')}</h3>
-            <p>"{prompt.fullPrompt.slice(0, 220)}..."</p>
-          </article>
-        ))}
-      </div>
     </PageContainer>
   );
 }
 
 function ContactPage() {
+  const [form, setForm] = useState({ name: '', department: '', email: '', message: '', attachment: '' });
+  const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
+
+  function updateContactField(field: keyof typeof form, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      setStatus({ state: 'error', message: 'Vui lòng nhập họ tên, email và nội dung cần hỗ trợ.' });
+      return;
+    }
+
+    setStatus({ state: 'submitting' });
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const result = await response.json().catch(() => ({} as { message?: string; errors?: string[]; id?: string }));
+      if (!response.ok) {
+        throw new Error(result.errors?.join(' ') || 'Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.');
+      }
+      setForm({ name: '', department: '', email: '', message: '', attachment: '' });
+      setStatus({ state: 'success', receiptId: result.id || '', message: result.message || 'Yêu cầu hỗ trợ đã được tiếp nhận.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.' });
+    }
+  }
+
   return (
     <PageContainer>
       <SectionHeading eyebrow="Liên hệ" title="Đầu mối tiếp nhận và hỗ trợ" description="Gửi câu hỏi về thể lệ, cách nộp bài, kỹ thuật hoặc đề xuất đăng prompt lên kho chung." />
@@ -901,17 +1301,218 @@ function ContactPage() {
             ))}
           </div>
         </div>
-        <form className="card contactForm" onSubmit={(event) => event.preventDefault()}>
+        <form className="card contactForm" onSubmit={handleContactSubmit}>
           <h2>Form hỗ trợ</h2>
-          <label>Họ tên<input placeholder="Nguyễn Văn A" /></label>
-          <label>Phòng/ban<input placeholder="Ban Nội dung số" /></label>
-          <label>Email<input type="email" placeholder="email@thoidai.vn" /></label>
-          <label>Nội dung cần hỗ trợ<textarea rows={5} placeholder="Mô tả câu hỏi hoặc vấn đề cần hỗ trợ" /></label>
-          <label>File/link đính kèm nếu có<input placeholder="Đường dẫn file minh chứng hoặc tài liệu liên quan" /></label>
-          <button className="primaryButton" type="submit">Gửi yêu cầu hỗ trợ</button>
+          <label>Họ tên<input name="contactName" autoComplete="name" value={form.name} onChange={(event) => updateContactField('name', event.target.value)} placeholder="Nguyễn Văn A" /></label>
+          <label>Phòng/ban<input name="contactDepartment" value={form.department} onChange={(event) => updateContactField('department', event.target.value)} placeholder="Ban Nội dung số" /></label>
+          <label>Email<input name="contactEmail" type="email" autoComplete="email" value={form.email} onChange={(event) => updateContactField('email', event.target.value)} placeholder="email@thoidai.vn" /></label>
+          <label>Nội dung cần hỗ trợ<textarea name="contactMessage" rows={5} value={form.message} onChange={(event) => updateContactField('message', event.target.value)} placeholder="Mô tả câu hỏi hoặc vấn đề cần hỗ trợ" /></label>
+          <label>File/link đính kèm nếu có<input name="contactAttachment" value={form.attachment} onChange={(event) => updateContactField('attachment', event.target.value)} placeholder="Đường dẫn file minh chứng hoặc tài liệu liên quan" /></label>
+          {status.state === 'error' ? <div className="formAlert error"><Icon name="error" /> {status.message}</div> : null}
+          {status.state === 'success' ? <div className="formAlert success"><Icon name="check_circle" /> {status.message}</div> : null}
+          <button className="primaryButton" type="submit" disabled={status.state === 'submitting'}>{status.state === 'submitting' ? 'Đang gửi...' : 'Gửi yêu cầu hỗ trợ'}</button>
         </form>
       </section>
     </PageContainer>
+  );
+}
+
+function AdminPage() {
+  const [token, setToken] = useState(() => window.localStorage.getItem('aiChallengeAdminToken') || '');
+  const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
+
+  async function loadAdminData(nextToken = token) {
+    if (!nextToken.trim()) {
+      setStatus({ state: 'error', message: 'Vui lòng nhập token quản trị.' });
+      return;
+    }
+
+    setStatus({ state: 'submitting' });
+    try {
+      const [submissionResponse, contactResponse] = await Promise.all([
+        fetch('/api/admin/submissions', { headers: { 'x-admin-token': nextToken } }),
+        fetch('/api/admin/contact-messages', { headers: { 'x-admin-token': nextToken } }),
+      ]);
+      const submissionData = await submissionResponse.json().catch(() => ({} as { submissions?: AdminSubmission[]; errors?: string[] }));
+      const contactData = await contactResponse.json().catch(() => ({} as { messages?: ContactMessage[]; errors?: string[] }));
+
+      if (!submissionResponse.ok) throw new Error(submissionData.errors?.join(' ') || 'Không thể tải danh sách bài dự thi.');
+      if (!contactResponse.ok) throw new Error(contactData.errors?.join(' ') || 'Không thể tải danh sách liên hệ.');
+
+      window.localStorage.setItem('aiChallengeAdminToken', nextToken);
+      setSubmissions(submissionData.submissions ?? []);
+      setMessages(contactData.messages ?? []);
+      setStatus({ state: 'success', receiptId: '', message: 'Đã tải dữ liệu quản trị.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể tải dữ liệu quản trị.' });
+    }
+  }
+
+  async function updateSubmission(id: string, patch: Partial<AdminSubmission>) {
+    try {
+      const response = await fetch(`/api/admin/submissions/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          'x-admin-token': token,
+        },
+        body: JSON.stringify(patch),
+      });
+      const data = await response.json().catch(() => ({} as { submission?: AdminSubmission; errors?: string[] }));
+      if (!response.ok || !data.submission) {
+        throw new Error(data.errors?.join(' ') || 'Không thể cập nhật bài dự thi.');
+      }
+      setSubmissions((current) => current.map((item) => (item.id === id ? data.submission! : item)));
+      setStatus({ state: 'success', receiptId: '', message: 'Đã cập nhật bài dự thi.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể cập nhật bài dự thi.' });
+    }
+  }
+
+  return (
+    <PageContainer>
+      <SectionHeading
+        eyebrow="Quản trị"
+        title="Dashboard Ban tổ chức"
+        description="Tổng hợp bài dự thi, chấm điểm, duyệt prompt, duyệt bài tiêu biểu và xem yêu cầu hỗ trợ gửi từ website."
+      />
+      <section className="adminTokenPanel card">
+        <label className="formField">
+          <span>Token quản trị</span>
+          <input name="adminToken" type="password" value={token} onChange={(event) => setToken(event.target.value)} placeholder="Nhập SUBMISSIONS_ADMIN_TOKEN" />
+        </label>
+        <button type="button" className="primaryButton" onClick={() => loadAdminData()} disabled={status.state === 'submitting'}>
+          {status.state === 'submitting' ? 'Đang tải...' : 'Mở dashboard'}
+        </button>
+        <a className="ghostButton" href={`/api/submissions/export.csv?token=${encodeURIComponent(token)}`}>Tải CSV</a>
+      </section>
+      {status.state === 'error' ? <div className="formAlert error"><Icon name="error" /> {status.message}</div> : null}
+      {status.state === 'success' ? <div className="formAlert success"><Icon name="check_circle" /> {status.message}</div> : null}
+
+      <section className="adminSection">
+        <SectionHeading title="Quản lý bài dự thi" action={<ResultsCount count={submissions.length} label="bài" />} />
+        {submissions.length ? (
+          <div className="adminSubmissionList">
+            {submissions.map((submission) => (
+              <article key={submission.id} className="card adminSubmissionCard">
+                <div className="cardMeta">
+                  <Badge tone="red">{submission.id}</Badge>
+                  <span>{formatDateTime(submission.createdAt)}</span>
+                </div>
+                <h3>{submission.title}</h3>
+                <InfoGrid
+                  items={[
+                    ['Người nộp', submission.participantName],
+                    ['Đơn vị', submission.department],
+                    ['Liên hệ', submission.contact],
+                    ['Tuần', `Tuần ${submission.week}`],
+                    ['Nhóm nhiệm vụ', submission.challengeGroup],
+                    ['Công cụ AI', submission.aiTools],
+                  ]}
+                />
+                <p>{submission.problem}</p>
+                <div className="adminFiles">
+                  <AdminFileGroup title="File bài dự thi" files={submission.submissionFiles} />
+                  <AdminFileGroup title="File minh chứng" files={submission.evidenceFiles} />
+                </div>
+                <div className="adminControls">
+                  <label>
+                    <span>Trạng thái chấm</span>
+                    <select name={`reviewStatus-${submission.id}`} value={submission.reviewStatus} onChange={(event) => updateSubmission(submission.id, { reviewStatus: event.target.value })}>
+                      <option value="pending">Chờ chấm</option>
+                      <option value="reviewing">Đang chấm</option>
+                      <option value="scored">Đã chấm</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Duyệt prompt</span>
+                    <select name={`promptStatus-${submission.id}`} value={submission.promptStatus} onChange={(event) => updateSubmission(submission.id, { promptStatus: event.target.value })}>
+                      <option value="pending">Chờ duyệt</option>
+                      <option value="approved">Duyệt lên Kho Prompt</option>
+                      <option value="rejected">Không hiển thị</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Bài tiêu biểu</span>
+                    <select name={`featuredStatus-${submission.id}`} value={submission.featuredStatus} onChange={(event) => updateSubmission(submission.id, { featuredStatus: event.target.value })}>
+                      <option value="pending">Chờ duyệt</option>
+                      <option value="approved">Hiển thị</option>
+                      <option value="rejected">Không hiển thị</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Điểm</span>
+                    <input name={`score-${submission.id}`} type="number" min="0" max="100" defaultValue={submission.score} onBlur={(event) => updateSubmission(submission.id, { score: Number(event.currentTarget.value) } as Partial<AdminSubmission>)} />
+                  </label>
+                </div>
+                <label className="formField">
+                  <span>Ghi chú giám khảo</span>
+                  <textarea name={`judgeNote-${submission.id}`} rows={3} defaultValue={submission.judgeNote} onBlur={(event) => updateSubmission(submission.id, { judgeNote: event.currentTarget.value })} />
+                </label>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Chưa tải hoặc chưa có bài dự thi" description="Nhập token quản trị để xem dữ liệu bài nộp trên VPS." />
+        )}
+      </section>
+
+      <section className="adminSection">
+        <SectionHeading title="Yêu cầu hỗ trợ" action={<ResultsCount count={messages.length} label="yêu cầu" />} />
+        {messages.length ? (
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Họ tên</th>
+                  <th>Phòng/ban</th>
+                  <th>Email</th>
+                  <th>Nội dung</th>
+                  <th>File/link</th>
+                </tr>
+              </thead>
+              <tbody>
+                {messages.map((message) => (
+                  <tr key={message.id}>
+                    <td>{formatDateTime(message.createdAt)}</td>
+                    <td>{message.name}</td>
+                    <td>{message.department || 'Chưa nhập'}</td>
+                    <td><a href={`mailto:${message.email}`}>{message.email}</a></td>
+                    <td>{message.message}</td>
+                    <td>{message.attachment || 'Không có'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="Chưa có yêu cầu hỗ trợ" description="Các phản ánh gửi từ form Liên hệ sẽ được lưu tại đây." />
+        )}
+      </section>
+    </PageContainer>
+  );
+}
+
+function AdminFileGroup({ title, files }: { title: string; files: Array<{ originalName: string; downloadUrl: string; size: number }> }) {
+  return (
+    <div>
+      <strong>{title}</strong>
+      {files.length ? (
+        <ul>
+          {files.map((file) => (
+            <li key={file.downloadUrl}>
+              <a href={file.downloadUrl}>{file.originalName}</a>
+              <span>{formatFileSize(file.size)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Chưa có file.</p>
+      )}
+    </div>
   );
 }
 
@@ -920,11 +1521,11 @@ function SearchPage({ navigate }: { navigate: (href: string) => void }) {
   const results = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     const items = [
-      ...prompts.map((prompt) => ({ title: prompt.title, type: 'Prompt', description: prompt.purpose, tags: prompt.tags, href: `/prompts/${prompt.id}` })),
-      ...submissions.map((submission) => ({ title: submission.title, type: 'Bài tiêu biểu', description: submission.problem, tags: submission.tags, href: `/featured/${submission.id}` })),
       ...challenges.map((challenge) => ({ title: challenge.title, type: 'Thử thách', description: challenge.description, tags: [challenge.targetGroup, `Tuần ${challenge.week}`], href: `/challenges/${challenge.id}` })),
       { title: 'Thể lệ cuộc thi', type: 'Thể lệ', description: 'Tiêu chí chấm điểm, giải thưởng, thời gian và tổ chức thực hiện.', tags: ['100 điểm', 'giải thưởng'], href: '/rules' },
       { title: 'Thông báo mở tuần 1', type: 'Tin cập nhật', description: 'Tuần 1 nhận bài đến 15h00 ngày 06/7/2026.', tags: ['deadline', 'tuần 1'], href: '/challenges' },
+      { title: 'Nộp bài dự thi', type: 'Form', description: 'Gửi nội dung bài dự thi, nhật ký tác nghiệp và upload file trực tiếp.', tags: ['nộp bài', 'upload'], href: '/submit' },
+      { title: 'Dashboard Ban tổ chức', type: 'Quản trị', description: 'Tổng hợp bài dự thi, chấm điểm, duyệt prompt và xem yêu cầu hỗ trợ.', tags: ['admin', 'chấm thi'], href: '/admin' },
     ];
     if (!keyword) return items;
     return items.filter((item) => `${item.title} ${item.type} ${item.description} ${item.tags.join(' ')}`.toLowerCase().includes(keyword));
