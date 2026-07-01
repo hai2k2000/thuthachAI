@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import multer from 'multer';
 
+import { buildAdminLoginResponse } from './admin-auth.mjs';
 import {
   createSubmissionId,
   formatSubmissionsCsv,
@@ -21,6 +22,8 @@ const tempDir = path.join(dataDir, 'tmp');
 const dbPath = path.join(dataDir, 'submissions.sqlite');
 const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://thuthachai.io.vn';
 const adminToken = process.env.SUBMISSIONS_ADMIN_TOKEN || '';
+const adminUsername = process.env.ADMIN_USERNAME || '';
+const adminPassword = process.env.ADMIN_PASSWORD || '';
 const maxUploadMb = Number(process.env.MAX_UPLOAD_MB || 25);
 const maxUploadFiles = Number(process.env.MAX_UPLOAD_FILES || 5);
 const maxSubmissionFiles = Number(process.env.MAX_SUBMISSION_FILES || 3);
@@ -181,6 +184,15 @@ app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/submissions/health', (_request, response) => {
   response.json({ ok: true });
+});
+
+app.post('/api/admin/login', (request, response) => {
+  const result = buildAdminLoginResponse(request.body, {
+    username: adminUsername,
+    password: adminPassword,
+    token: adminToken,
+  });
+  response.status(result.status).json(result.body);
 });
 
 app.post('/api/submissions', upload.fields([

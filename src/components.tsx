@@ -82,6 +82,10 @@ export function Header({ pathname, navigate }: { pathname: string; navigate: Nav
           ))}
         </nav>
         <div className="headerActions">
+          <AppLink href="/admin" navigate={navigate} className="ghostButton smallButton loginButton">
+            <Icon name="login" />
+            <span>Đăng nhập</span>
+          </AppLink>
           <AppLink href="/contact" navigate={navigate} className="ghostButton smallButton">
             Liên hệ
           </AppLink>
@@ -109,7 +113,7 @@ function MobileMenu({ pathname, navigate, onClose }: { pathname: string; navigat
           </button>
         </div>
         <nav>
-          {[...navItems, { label: 'Thể lệ', href: '/rules' }, { label: 'Liên hệ', href: '/contact' }, { label: 'Tìm kiếm', href: '/search' }].map((item) => (
+          {[...navItems, { label: 'Thể lệ', href: '/rules' }, { label: 'Đăng nhập', href: '/admin' }, { label: 'Liên hệ', href: '/contact' }, { label: 'Tìm kiếm', href: '/search' }].map((item) => (
             <AppLink
               key={item.href}
               href={item.href}

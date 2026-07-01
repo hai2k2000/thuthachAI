@@ -88,4 +88,8 @@ for (const countdownLayout of ['countdownGrid', 'countdownUnit', 'countdownValue
   assert(styles.includes(`.${countdownLayout}`), `Missing countdown style hook: ${countdownLayout}`);
 }
 
+for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', '/api/admin/login', 'aiChallengeAdminUser']) {
+  assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);
+}
+
 console.log('Content contract passed');

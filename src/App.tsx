@@ -1337,13 +1337,67 @@ function ContactPage() {
 
 function AdminPage() {
   const [token, setToken] = useState(() => window.localStorage.getItem('aiChallengeAdminToken') || '');
+  const [adminUser, setAdminUser] = useState(() => window.localStorage.getItem('aiChallengeAdminUser') || '');
+  const [loginForm, setLoginForm] = useState({ username: 'admin', password: '' });
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
 
+  useEffect(() => {
+    if (token) {
+      void loadAdminData(token);
+    }
+  }, []);
+
+  function updateLoginField(field: keyof typeof loginForm, value: string) {
+    setLoginForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!loginForm.username.trim() || !loginForm.password) {
+      setStatus({ state: 'error', message: 'Vui lòng nhập tài khoản và mật khẩu quản trị.' });
+      return;
+    }
+
+    setStatus({ state: 'submitting' });
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(loginForm),
+      });
+      const data = await response.json().catch(() => ({} as { token?: string; username?: string; errors?: string[] }));
+      if (!response.ok || !data.token) {
+        throw new Error(data.errors?.join(' ') || 'Không thể đăng nhập quản trị.');
+      }
+
+      const nextUser = data.username || loginForm.username.trim();
+      window.localStorage.setItem('aiChallengeAdminToken', data.token);
+      window.localStorage.setItem('aiChallengeAdminUser', nextUser);
+      setToken(data.token);
+      setAdminUser(nextUser);
+      setLoginForm((current) => ({ ...current, password: '' }));
+      await loadAdminData(data.token);
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể đăng nhập quản trị.' });
+    }
+  }
+
+  function handleAdminLogout() {
+    window.localStorage.removeItem('aiChallengeAdminToken');
+    window.localStorage.removeItem('aiChallengeAdminUser');
+    setToken('');
+    setAdminUser('');
+    setSubmissions([]);
+    setMessages([]);
+    setStatus({ state: 'idle' });
+    setLoginForm({ username: 'admin', password: '' });
+  }
+
   async function loadAdminData(nextToken = token) {
     if (!nextToken.trim()) {
-      setStatus({ state: 'error', message: 'Vui lòng nhập token quản trị.' });
+      setStatus({ state: 'error', message: 'Vui lòng đăng nhập quản trị.' });
       return;
     }
 
@@ -1360,6 +1414,7 @@ function AdminPage() {
       if (!contactResponse.ok) throw new Error(contactData.errors?.join(' ') || 'Không thể tải danh sách liên hệ.');
 
       window.localStorage.setItem('aiChallengeAdminToken', nextToken);
+      setToken(nextToken);
       setSubmissions(submissionData.submissions ?? []);
       setMessages(contactData.messages ?? []);
       setStatus({ state: 'success', receiptId: '', message: 'Đã tải dữ liệu quản trị.' });
@@ -1396,18 +1451,51 @@ function AdminPage() {
         title="Dashboard Ban tổ chức"
         description="Tổng hợp bài dự thi, chấm điểm, duyệt prompt, duyệt bài tiêu biểu và xem yêu cầu hỗ trợ gửi từ website."
       />
-      <section className="adminTokenPanel card">
-        <label className="formField">
-          <span>Token quản trị</span>
-          <input name="adminToken" type="password" value={token} onChange={(event) => setToken(event.target.value)} placeholder="Nhập SUBMISSIONS_ADMIN_TOKEN" />
-        </label>
-        <button type="button" className="primaryButton" onClick={() => loadAdminData()} disabled={status.state === 'submitting'}>
-          {status.state === 'submitting' ? 'Đang tải...' : 'Mở dashboard'}
-        </button>
-        <a className="ghostButton" href={`/api/submissions/export.csv?token=${encodeURIComponent(token)}`}>Tải CSV</a>
-      </section>
+      {!token ? (
+        <form className="adminLoginPanel card" onSubmit={handleAdminLogin}>
+          <Icon name="admin_panel_settings" />
+          <h2>Đăng nhập quản trị</h2>
+          <p>Dùng tài khoản được cấp để vào dashboard, quản lý bài dự thi và tải dữ liệu từ VPS.</p>
+          <label className="formField">
+            <span>Tên đăng nhập</span>
+            <input name="adminUsername" autoComplete="username" value={loginForm.username} onChange={(event) => updateLoginField('username', event.target.value)} placeholder="admin" />
+          </label>
+          <label className="formField">
+            <span>Mật khẩu</span>
+            <input name="adminPassword" type="password" autoComplete="current-password" value={loginForm.password} onChange={(event) => updateLoginField('password', event.target.value)} placeholder="Nhập mật khẩu quản trị" />
+          </label>
+          <button type="submit" className="primaryButton" disabled={status.state === 'submitting'}>
+            <Icon name="login" />
+            {status.state === 'submitting' ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          </button>
+        </form>
+      ) : (
+        <section className="adminToolbar card">
+          <div className="adminSession">
+            <span>Đã đăng nhập</span>
+            <strong>{adminUser || 'admin'}</strong>
+          </div>
+          <div className="adminToolbarActions">
+            <button type="button" className="softButton" onClick={() => loadAdminData()} disabled={status.state === 'submitting'}>
+              <Icon name="refresh" />
+              {status.state === 'submitting' ? 'Đang tải...' : 'Tải lại'}
+            </button>
+            <a className="ghostButton" href={`/api/submissions/export.csv?token=${encodeURIComponent(token)}`}>
+              <Icon name="download" />
+              Tải CSV
+            </a>
+            <button type="button" className="darkButton" onClick={handleAdminLogout}>
+              <Icon name="logout" />
+              Đăng xuất
+            </button>
+          </div>
+        </section>
+      )}
       {status.state === 'error' ? <div className="formAlert error"><Icon name="error" /> {status.message}</div> : null}
       {status.state === 'success' ? <div className="formAlert success"><Icon name="check_circle" /> {status.message}</div> : null}
+
+      {!token ? null : (
+        <>
 
       <section className="adminSection">
         <SectionHeading title="Quản lý bài dự thi" action={<ResultsCount count={submissions.length} label="bài" />} />
@@ -1473,7 +1561,7 @@ function AdminPage() {
             ))}
           </div>
         ) : (
-          <EmptyState title="Chưa tải hoặc chưa có bài dự thi" description="Nhập token quản trị để xem dữ liệu bài nộp trên VPS." />
+          <EmptyState title="Chưa có bài dự thi" description="Bài nộp qua form trên website sẽ hiển thị tại đây sau khi được lưu trên VPS." />
         )}
       </section>
 
@@ -1510,6 +1598,8 @@ function AdminPage() {
           <EmptyState title="Chưa có yêu cầu hỗ trợ" description="Các phản ánh gửi từ form Liên hệ sẽ được lưu tại đây." />
         )}
       </section>
+        </>
+      )}
     </PageContainer>
   );
 }
