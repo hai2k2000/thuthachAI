@@ -750,18 +750,18 @@ img {
   margin: 0 auto 24px;
   padding: 24px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, .08);
-  background:
-    linear-gradient(135deg, #231c1d 0%, #171b20 58%, #142025 100%);
-  color: #fff;
-  box-shadow: 0 18px 48px rgba(25, 28, 30, .14);
+  border: 1px solid var(--primary-soft);
+  border-color: var(--primary-soft);
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 18px 46px rgba(238, 33, 40, .08);
 }
 
 .countdownBanner::before {
   position: absolute;
   inset: 0 0 auto;
   height: 3px;
-  background: rgba(238, 33, 40, .8);
+  background: var(--primary);
   content: '';
 }
 
@@ -784,7 +784,7 @@ img {
 
 .countdownHeader h3 {
   margin: 10px 0 0;
-  color: #fff;
+  color: var(--primary);
   font-size: clamp(24px, 2.6vw, 36px);
   line-height: 1.12;
 }
@@ -805,16 +805,16 @@ img {
 
 .countdownBadge {
   padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: rgba(255, 255, 255, .08);
-  color: #ffe8e8;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
 }
 
 .countdownDeadline {
   padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, .10);
-  background: rgba(255, 255, 255, .06);
-  color: #fff;
+  border: 1px solid var(--primary-soft);
+  background: #fff5f5;
+  color: var(--primary-dark);
   white-space: nowrap;
 }
 
@@ -841,18 +841,18 @@ img {
   justify-items: center;
   gap: 6px;
   padding: 14px 12px;
-  border: 1px solid rgba(255, 255, 255, .10);
+  border: 1px solid var(--primary-soft);
   border-radius: 14px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .045));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+    linear-gradient(180deg, #fff, #fff6f6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
 }
 
 .countdownUnit::before {
   position: absolute;
   inset: 0 0 auto;
   height: 2px;
-  background: rgba(255, 255, 255, .16);
+  background: rgba(238, 33, 40, .18);
   content: '';
 }
 
@@ -860,13 +860,13 @@ img {
   position: absolute;
   inset: 50% 12px auto;
   height: 1px;
-  background: rgba(255, 255, 255, .1);
+  background: rgba(238, 33, 40, .08);
   content: '';
 }
 
 .countdownValue,
 .countdownExpired {
-  color: #fff;
+  color: var(--primary);
   font-family: 'Nunito', 'Be Vietnam Pro', system-ui, sans-serif;
   font-size: clamp(32px, 4.4vw, 52px);
   line-height: .95;
@@ -875,7 +875,7 @@ img {
 }
 
 .countdownLabel {
-  color: #ffe8e8;
+  color: var(--primary-dark);
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
@@ -895,21 +895,21 @@ img {
   gap: 14px;
   min-width: 0;
   padding: 22px;
-  border: 1px solid rgba(255, 255, 255, .10);
+  border: 1px solid var(--primary-soft);
   border-radius: 16px;
-  background: rgba(255, 255, 255, .06);
+  background: #fff7f7;
 }
 
 .countdownActionLabel {
   justify-self: start;
   padding: 7px 11px;
-  background: rgba(255, 255, 255, .08);
-  color: #fff;
+  background: #fff;
+  color: var(--primary-dark);
 }
 
 .countdownAction p {
   margin: 0;
-  color: #f4f7f8;
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -921,15 +921,15 @@ img {
   gap: 8px;
   border-radius: var(--radius-sm);
   padding: 11px 16px;
-  background: #fff;
-  color: var(--primary);
+  background: var(--primary);
+  color: #fff;
   text-decoration: none;
   font-weight: 900;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .14);
+  box-shadow: 0 12px 26px rgba(238, 33, 40, .22);
 }
 
 .countdownCta:hover {
-  background: #fff4f4;
+  background: var(--primary-dark);
 }
 
 .timeline {

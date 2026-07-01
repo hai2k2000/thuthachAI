@@ -93,6 +93,10 @@ for (const countdownUpgrade of ['countdownHeader', 'countdownBadge', 'countdownD
   assert(styles.includes(`.${countdownUpgrade}`), `Missing professional countdown style: ${countdownUpgrade}`);
 }
 assert(styles.includes('margin: 0 auto 24px;'), 'Countdown banner must keep horizontal auto margins inside full-width bands');
+const countdownBannerStyles = styles.match(/\.countdownBanner\s*{[^}]*}/)?.[0] || '';
+const countdownValueStyles = styles.match(/\.countdownValue,[^}]*\.countdownExpired\s*{[^}]*}/)?.[0] || '';
+assert(countdownBannerStyles.includes('background: #fff;') && countdownBannerStyles.includes('border-color: var(--primary-soft);'), 'Countdown banner must use a red-white brand container');
+assert(countdownValueStyles.includes('color: var(--primary);'), 'Countdown values must use the red brand color');
 
 for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', '/api/admin/login', 'aiChallengeAdminUser']) {
   assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);
