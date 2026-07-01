@@ -1,8 +1,8 @@
-# AI Challenge Hub - Tạp chí Thời đại
+# Thử thách AI - Tạp chí Thời đại
 
 ## Tên dự án
 
-AI Challenge Hub - Tạp chí Thời đại
+Thử thách AI - Tạp chí Thời đại
 
 ## Mục tiêu website
 

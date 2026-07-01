@@ -957,7 +957,7 @@ function NotFoundPage({ navigate }: { navigate: (href: string) => void }) {
       <section className="notFound card">
         <Icon name="travel_explore" />
         <h1>Không tìm thấy trang</h1>
-        <p>Route này chưa có trong AI Challenge Hub.</p>
+        <p>Route này chưa có trong Thử thách AI.</p>
         <AppLink href="/" navigate={navigate} className="primaryButton">Về trang chủ</AppLink>
       </section>
     </PageContainer>

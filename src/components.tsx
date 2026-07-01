@@ -67,7 +67,7 @@ export function Header({ pathname, navigate }: { pathname: string; navigate: Nav
             <img src="/assets/thoi-dai-logo.png" alt="Tạp chí Thời Đại - Vietnam Times" />
           </span>
           <span className="brandDivider" />
-          <b>AI Challenge Hub</b>
+          <b>Thử thách AI</b>
         </AppLink>
         <nav className="desktopNav" aria-label="Điều hướng chính">
           {navItems.map((item) => (
@@ -103,7 +103,7 @@ function MobileMenu({ pathname, navigate, onClose }: { pathname: string; navigat
     <div className="mobileMenuOverlay" onMouseDown={onClose}>
       <aside className="mobileMenuPanel" onMouseDown={(event) => event.stopPropagation()}>
         <div className="mobileMenuHeader">
-          <strong>AI Challenge Hub</strong>
+          <strong>Thử thách AI</strong>
           <button type="button" className="iconButton" onClick={onClose} aria-label="Đóng menu">
             <Icon name="close" />
           </button>
@@ -130,7 +130,7 @@ export function Footer({ navigate }: { navigate: Navigate }) {
   return (
     <footer className="siteFooter">
       <div>
-        <strong>AI Challenge Hub</strong>
+        <strong>Thử thách AI</strong>
         <span>© Tạp chí Thời đại. Liên hệ: Vũ Mai Anh</span>
       </div>
       <nav>
