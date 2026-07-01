@@ -92,6 +92,7 @@ for (const countdownUpgrade of ['countdownHeader', 'countdownBadge', 'countdownD
   assert(app.includes(countdownUpgrade), `Missing professional countdown hook: ${countdownUpgrade}`);
   assert(styles.includes(`.${countdownUpgrade}`), `Missing professional countdown style: ${countdownUpgrade}`);
 }
+assert(styles.includes('margin: 0 auto 24px;'), 'Countdown banner must keep horizontal auto margins inside full-width bands');
 
 for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', '/api/admin/login', 'aiChallengeAdminUser']) {
   assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);

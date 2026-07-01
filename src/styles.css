@@ -747,21 +747,21 @@ img {
   grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
   align-items: stretch;
   gap: 22px;
-  margin: 0 0 24px;
-  padding: 28px;
+  margin: 0 auto 24px;
+  padding: 24px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, .08);
   background:
-    linear-gradient(135deg, #241718 0%, #171c22 54%, #10242a 100%);
+    linear-gradient(135deg, #231c1d 0%, #171b20 58%, #142025 100%);
   color: #fff;
-  box-shadow: 0 24px 70px rgba(25, 28, 30, .18);
+  box-shadow: 0 18px 48px rgba(25, 28, 30, .14);
 }
 
 .countdownBanner::before {
   position: absolute;
   inset: 0 0 auto;
-  height: 5px;
-  background: linear-gradient(90deg, var(--primary), var(--cyan), var(--orange));
+  height: 3px;
+  background: rgba(238, 33, 40, .8);
   content: '';
 }
 
@@ -805,15 +805,15 @@ img {
 
 .countdownBadge {
   padding: 7px 12px;
-  border: 1px solid rgba(255, 218, 217, .22);
-  background: rgba(238, 33, 40, .2);
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .08);
   color: #ffe8e8;
 }
 
 .countdownDeadline {
   padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, .16);
-  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .10);
+  background: rgba(255, 255, 255, .06);
   color: #fff;
   white-space: nowrap;
 }
@@ -828,7 +828,7 @@ img {
   display: grid;
   grid-template-columns: repeat(4, minmax(92px, 1fr));
   gap: 12px;
-  max-width: 760px;
+  max-width: 720px;
 }
 
 .countdownUnit {
@@ -836,29 +836,25 @@ img {
   overflow: hidden;
   display: grid;
   min-width: 0;
-  min-height: 112px;
+  min-height: 100px;
   align-content: center;
   justify-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 14px 12px;
-  border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 14px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .06));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .045));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
 }
 
 .countdownUnit::before {
   position: absolute;
   inset: 0 0 auto;
-  height: 3px;
-  background: var(--primary);
+  height: 2px;
+  background: rgba(255, 255, 255, .16);
   content: '';
 }
-
-.countdownUnit:nth-child(2)::before { background: var(--cyan); }
-.countdownUnit:nth-child(3)::before { background: var(--orange); }
-.countdownUnit:nth-child(4)::before { background: #9ddfe5; }
 
 .countdownUnit::after {
   position: absolute;
@@ -872,7 +868,7 @@ img {
 .countdownExpired {
   color: #fff;
   font-family: 'Nunito', 'Be Vietnam Pro', system-ui, sans-serif;
-  font-size: clamp(34px, 5vw, 58px);
+  font-size: clamp(32px, 4.4vw, 52px);
   line-height: .95;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
@@ -899,15 +895,15 @@ img {
   gap: 14px;
   min-width: 0;
   padding: 22px;
-  border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .06);
 }
 
 .countdownActionLabel {
   justify-self: start;
   padding: 7px 11px;
-  background: rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .08);
   color: #fff;
 }
 
@@ -929,7 +925,7 @@ img {
   color: var(--primary);
   text-decoration: none;
   font-weight: 900;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .18);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .14);
 }
 
 .countdownCta:hover {
