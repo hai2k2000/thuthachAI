@@ -14,6 +14,7 @@ uploads/
 *.log
 
 _docx_extract/
+_qa_*.png
 
 .DS_Store
 Thumbs.db

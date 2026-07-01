@@ -82,25 +82,16 @@ img {
 }
 
 .brandLogo {
-  display: grid;
-  gap: 0;
-  color: var(--primary);
-  line-height: 1;
-  letter-spacing: 0;
-  min-width: 82px;
+  width: 142px;
+  min-width: 142px;
+  display: block;
 }
 
-.brandLogo strong {
-  font-weight: 900;
-  font-size: 20px;
-}
-
-.brandLogo em {
-  font-style: normal;
-  color: #73605f;
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
+.brandLogo img {
+  width: 100%;
+  height: auto;
+  max-height: 54px;
+  object-fit: contain;
 }
 
 .brandDivider {
@@ -1682,6 +1673,11 @@ td {
   .brandDivider,
   .brand b {
     display: none;
+  }
+
+  .brandLogo {
+    width: 118px;
+    min-width: 118px;
   }
 
   .headerActions .primaryButton {

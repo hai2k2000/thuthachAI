@@ -64,8 +64,7 @@ export function Header({ pathname, navigate }: { pathname: string; navigate: Nav
       <div className="headerInner">
         <AppLink href="/" navigate={navigate} className="brand">
           <span className="brandLogo">
-            <strong>THỜI ĐẠI</strong>
-            <em>VIETNAM TIMES</em>
+            <img src="/assets/thoi-dai-logo.png" alt="Tạp chí Thời Đại - Vietnam Times" />
           </span>
           <span className="brandDivider" />
           <b>AI Challenge Hub</b>
