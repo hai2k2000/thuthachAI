@@ -329,11 +329,29 @@ type ContactMessage = {
 
 function CountdownBanner({ targetDate }: { targetDate: string }) {
   const remaining = useCountdown(targetDate);
+  const countdownUnits = [
+    { label: 'ngày', value: remaining.days },
+    { label: 'giờ', value: remaining.hours },
+    { label: 'phút', value: remaining.minutes },
+    { label: 'giây', value: remaining.seconds },
+  ];
+
   return (
     <section className="countdownBanner" aria-live="polite">
-      <div>
+      <div className="countdownCopy">
         <span>Thời gian còn lại</span>
-        <strong>{remaining.expired ? 'Đã hết hạn nộp bài' : `${remaining.days} ngày ${remaining.hours} giờ ${remaining.minutes} phút ${remaining.seconds} giây`}</strong>
+        {remaining.expired ? (
+          <strong className="countdownExpired">Đã hết hạn nộp bài</strong>
+        ) : (
+          <div className="countdownGrid" aria-label="Thời gian còn lại đến hạn nộp bài">
+            {countdownUnits.map((unit) => (
+              <div className="countdownUnit" key={unit.label}>
+                <strong className="countdownValue">{unit.value}</strong>
+                <span className="countdownLabel">{unit.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <AppLink href="/submit" navigate={(href) => {
         window.history.pushState({}, '', href);

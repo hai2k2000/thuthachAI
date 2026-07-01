@@ -5,6 +5,7 @@ const root = process.cwd();
 const data = fs.readFileSync(path.join(root, 'src/data.ts'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 const components = fs.readFileSync(path.join(root, 'src/components.tsx'), 'utf8');
+const styles = fs.readFileSync(path.join(root, 'src/styles.css'), 'utf8');
 const harnessDir = path.join(root, 'harness');
 
 const requiredRoutes = [
@@ -80,6 +81,11 @@ assert(submissionCount >= 6, `Expected at least 6 submissions, found ${submissio
 
 for (const behavior of ['navigator.clipboard.writeText', 'SearchInput', 'SelectFilter', 'EmptyState', 'PromptDetail', 'SubmissionDetail', 'ChallengeDetail']) {
   assert(`${app}\n${components}`.includes(behavior), `Missing behavior/component: ${behavior}`);
+}
+
+for (const countdownLayout of ['countdownGrid', 'countdownUnit', 'countdownValue', 'countdownLabel']) {
+  assert(app.includes(countdownLayout), `Missing countdown layout hook: ${countdownLayout}`);
+  assert(styles.includes(`.${countdownLayout}`), `Missing countdown style hook: ${countdownLayout}`);
 }
 
 console.log('Content contract passed');
