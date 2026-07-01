@@ -88,6 +88,11 @@ for (const countdownLayout of ['countdownGrid', 'countdownUnit', 'countdownValue
   assert(styles.includes(`.${countdownLayout}`), `Missing countdown style hook: ${countdownLayout}`);
 }
 
+for (const countdownUpgrade of ['countdownHeader', 'countdownBadge', 'countdownDeadline', 'countdownAction', 'countdownCta']) {
+  assert(app.includes(countdownUpgrade), `Missing professional countdown hook: ${countdownUpgrade}`);
+  assert(styles.includes(`.${countdownUpgrade}`), `Missing professional countdown style: ${countdownUpgrade}`);
+}
+
 for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', '/api/admin/login', 'aiChallengeAdminUser']) {
   assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);
 }

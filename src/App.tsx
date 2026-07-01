@@ -329,6 +329,7 @@ type ContactMessage = {
 
 function CountdownBanner({ targetDate }: { targetDate: string }) {
   const remaining = useCountdown(targetDate);
+  const deadlineLabel = '15:00 - 06/07/2026';
   const countdownUnits = [
     { label: 'ngày', value: remaining.days },
     { label: 'giờ', value: remaining.hours },
@@ -339,7 +340,13 @@ function CountdownBanner({ targetDate }: { targetDate: string }) {
   return (
     <section className="countdownBanner" aria-live="polite">
       <div className="countdownCopy">
-        <span>Thời gian còn lại</span>
+        <div className="countdownHeader">
+          <div>
+            <span className="countdownBadge"><Icon name="timer" /> Hạn nộp tuần 1</span>
+            <h3>Đếm ngược nhận bài dự thi</h3>
+          </div>
+          <span className="countdownDeadline"><Icon name="event" /> {deadlineLabel}</span>
+        </div>
         {remaining.expired ? (
           <strong className="countdownExpired">Đã hết hạn nộp bài</strong>
         ) : (
@@ -353,11 +360,15 @@ function CountdownBanner({ targetDate }: { targetDate: string }) {
           </div>
         )}
       </div>
-      <AppLink href="/submit" navigate={(href) => {
-        window.history.pushState({}, '', href);
-        window.dispatchEvent(new PopStateEvent('popstate'));
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }} className="darkButton">Nộp bài tuần 1</AppLink>
+      <div className="countdownAction">
+        <span className="countdownActionLabel">Cổng nộp bài trực tuyến</span>
+        <p>Hoàn thiện bài dự thi và file minh chứng trước thời hạn để Ban tổ chức tiếp nhận kịp thời.</p>
+        <AppLink href="/submit" navigate={(href) => {
+          window.history.pushState({}, '', href);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }} className="countdownCta"><Icon name="upload_file" /> Nộp bài tuần 1</AppLink>
+      </div>
     </section>
   );
 }

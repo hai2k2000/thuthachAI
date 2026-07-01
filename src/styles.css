@@ -741,62 +741,145 @@ img {
 }
 
 .countdownBanner {
+  position: relative;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  align-items: stretch;
+  gap: 22px;
   margin: 0 0 24px;
-  padding: 26px 28px;
+  padding: 28px;
   border-radius: 24px;
-  background: var(--dark);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(135deg, #241718 0%, #171c22 54%, #10242a 100%);
   color: #fff;
-  box-shadow: var(--shadow);
+  box-shadow: 0 24px 70px rgba(25, 28, 30, .18);
+}
+
+.countdownBanner::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--primary), var(--cyan), var(--orange));
+  content: '';
 }
 
 .countdownCopy {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 12px;
+  align-content: center;
+  gap: 18px;
   min-width: 0;
 }
 
-.countdownCopy > span {
-  color: var(--primary-soft);
-  font-size: 13px;
+.countdownHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 20px;
+}
+
+.countdownHeader h3 {
+  margin: 10px 0 0;
+  color: #fff;
+  font-size: clamp(24px, 2.6vw, 36px);
+  line-height: 1.12;
+}
+
+.countdownBadge,
+.countdownDeadline,
+.countdownActionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 900;
+  line-height: 1;
   text-transform: uppercase;
+}
+
+.countdownBadge {
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 218, 217, .22);
+  background: rgba(238, 33, 40, .2);
+  color: #ffe8e8;
+}
+
+.countdownDeadline {
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.countdownBadge .material-symbols-outlined,
+.countdownDeadline .material-symbols-outlined,
+.countdownCta .material-symbols-outlined {
+  font-size: 18px;
 }
 
 .countdownGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(76px, 1fr));
-  gap: 10px;
-  max-width: 620px;
+  grid-template-columns: repeat(4, minmax(92px, 1fr));
+  gap: 12px;
+  max-width: 760px;
 }
 
 .countdownUnit {
+  position: relative;
+  overflow: hidden;
   display: grid;
   min-width: 0;
-  min-height: 88px;
+  min-height: 112px;
   align-content: center;
   justify-items: center;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  gap: 8px;
+  padding: 14px 12px;
+  border: 1px solid rgba(255, 255, 255, .16);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+.countdownUnit::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--primary);
+  content: '';
+}
+
+.countdownUnit:nth-child(2)::before { background: var(--cyan); }
+.countdownUnit:nth-child(3)::before { background: var(--orange); }
+.countdownUnit:nth-child(4)::before { background: #9ddfe5; }
+
+.countdownUnit::after {
+  position: absolute;
+  inset: 50% 12px auto;
+  height: 1px;
+  background: rgba(255, 255, 255, .1);
+  content: '';
 }
 
 .countdownValue,
 .countdownExpired {
   color: #fff;
-  font-size: clamp(26px, 4vw, 46px);
-  line-height: 1;
+  font-family: 'Nunito', 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: .95;
   font-variant-numeric: tabular-nums;
+  font-weight: 900;
 }
 
 .countdownLabel {
-  color: var(--primary-soft);
+  color: #ffe8e8;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
@@ -806,6 +889,51 @@ img {
 .countdownExpired {
   overflow-wrap: anywhere;
   line-height: 1.08;
+}
+
+.countdownAction {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .08);
+}
+
+.countdownActionLabel {
+  justify-self: start;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+}
+
+.countdownAction p {
+  margin: 0;
+  color: #f4f7f8;
+  font-weight: 700;
+}
+
+.countdownCta {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  padding: 11px 16px;
+  background: #fff;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 900;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .18);
+}
+
+.countdownCta:hover {
+  background: #fff4f4;
 }
 
 .timeline {
@@ -2042,11 +2170,29 @@ td {
   .countdownBanner {
     grid-template-columns: 1fr;
     align-items: stretch;
+    padding: 22px 18px;
+  }
+
+  .countdownHeader {
+    display: grid;
+  }
+
+  .countdownDeadline {
+    width: 100%;
+    white-space: normal;
   }
 
   .countdownGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: none;
+  }
+
+  .countdownUnit {
+    min-height: 98px;
+  }
+
+  .countdownAction {
+    padding: 18px;
   }
 
   .statCard,
