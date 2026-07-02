@@ -44,6 +44,7 @@ import {
   challenges,
   contactTopics,
   departmentScores,
+  findAINewsItem,
   findChallenge,
   findPrompt,
   findSubmission,
@@ -103,6 +104,9 @@ function renderRoute(pathname: string, navigate: (href: string) => void, copy: (
 
   const promptMatch = pathname.match(/^\/prompts\/([^/]+)$/);
   if (promptMatch) return <PromptDetailPage id={promptMatch[1]} navigate={navigate} onCopy={copy} />;
+
+  const aiNewsMatch = pathname.match(/^\/ai-news\/([^/]+)$/);
+  if (aiNewsMatch) return <AiNewsDetailPage id={aiNewsMatch[1]} navigate={navigate} />;
 
   const featuredMatch = pathname.match(/^\/featured\/([^/]+)$/);
   if (featuredMatch) return <FeaturedDetailPage id={featuredMatch[1]} navigate={navigate} />;
@@ -1860,7 +1864,8 @@ function AiNewsPage({ navigate }: { navigate: (href: string) => void }) {
             ))}
           </ul>
           <div className="aiNewsActions">
-            <AppLink href="/submit" navigate={navigate} className="primaryButton">Nộp bài ứng dụng AI</AppLink>
+            <AppLink href={`/ai-news/${featured.id}`} navigate={navigate} className="primaryButton">Đọc bài chi tiết</AppLink>
+            <AppLink href="/submit" navigate={navigate} className="ghostButton">Nộp bài ứng dụng AI</AppLink>
             <AppLink href="/ai-lab" navigate={navigate} className="ghostButton">Xem AI Lab</AppLink>
           </div>
         </div>
@@ -1878,7 +1883,11 @@ function AiNewsPage({ navigate }: { navigate: (href: string) => void }) {
               <img src={item.image} alt={item.title} loading="lazy" />
               <div>
                 <Badge tone="soft">{item.category}</Badge>
-                <h3>{item.title}</h3>
+                <h3>
+                  <AppLink href={`/ai-news/${item.id}`} navigate={navigate} className="aiNewsTitleLink">
+                    {item.title}
+                  </AppLink>
+                </h3>
                 <p>{item.summary}</p>
                 <div className="aiNewsMeta">
                   <span><Icon name="calendar_month" /> {item.date}</span>
@@ -1889,6 +1898,9 @@ function AiNewsPage({ navigate }: { navigate: (href: string) => void }) {
                     <span key={tag}>{tag}</span>
                   ))}
                 </div>
+                <AppLink href={`/ai-news/${item.id}`} navigate={navigate} className="aiNewsReadMore">
+                  Đọc tiếp <Icon name="arrow_forward" />
+                </AppLink>
               </div>
             </article>
           ))}
@@ -1904,6 +1916,89 @@ function AiNewsPage({ navigate }: { navigate: (href: string) => void }) {
               <Icon name={item.icon} />
               <strong>{item.title}</strong>
               <span>{item.description}</span>
+            </AppLink>
+          ))}
+        </div>
+      </section>
+    </PageContainer>
+  );
+}
+
+function AiNewsDetailPage({ id, navigate }: { id: string; navigate: (href: string) => void }) {
+  const article = findAINewsItem(id);
+  if (!article) return <NotFoundPage navigate={navigate} />;
+
+  const relatedArticles = aiNewsItems
+    .filter((item) => item.id !== article.id)
+    .sort((a, b) => Number(b.category === article.category) - Number(a.category === article.category))
+    .slice(0, 3);
+
+  return (
+    <PageContainer className="aiNewsDetailPage">
+      <Breadcrumb navigate={navigate} items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tin tức AI', href: '/ai-news' }, { label: article.title }]} />
+
+      <section className="aiNewsDetailHero">
+        <div>
+          <Badge tone="red">{article.category}</Badge>
+          <h1>{article.title}</h1>
+          <p>{article.summary}</p>
+          <div className="aiNewsMeta">
+            <span><Icon name="calendar_month" /> {article.date}</span>
+            <span><Icon name="schedule" /> {article.readTime}</span>
+          </div>
+          <div className="tagList">
+            {article.tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+          <div className="aiNewsActions">
+            <AppLink href="/ai-news" navigate={navigate} className="ghostButton"><Icon name="arrow_back" /> Quay lại bản tin</AppLink>
+            <AppLink href="/submit" navigate={navigate} className="primaryButton"><Icon name="upload_file" /> Nộp bài ứng dụng AI</AppLink>
+          </div>
+        </div>
+        <img src={article.image} alt={article.title} />
+      </section>
+
+      <section className="aiNewsDetailLayout">
+        <article className="card aiNewsArticleBody">
+          {article.content.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+          <div className="aiNewsArticleNote">
+            <Icon name="tips_and_updates" />
+            <span>Gợi ý áp dụng: lưu lại prompt, đầu vào, đầu ra và phần biên tập thủ công để bài dự thi thể hiện rõ quy trình làm việc với AI.</span>
+          </div>
+        </article>
+        <aside className="aiNewsDetailAside">
+          <section className="card">
+            <h2>Ứng dụng vào bài dự thi</h2>
+            <ul>
+              <li>Chọn một vấn đề thật trong phòng/ban.</li>
+              <li>Mô tả prompt và công cụ AI đã dùng.</li>
+              <li>So sánh kết quả trước và sau khi dùng AI.</li>
+              <li>Nêu điều kiện để người khác áp dụng lại.</li>
+            </ul>
+          </section>
+          <section className="card">
+            <h2>Lối tắt hữu ích</h2>
+            <div className="aiNewsSideLinks">
+              <AppLink href="/prompts" navigate={navigate}>Kho Prompt</AppLink>
+              <AppLink href="/ai-lab" navigate={navigate}>AI Lab</AppLink>
+              <AppLink href="/forum" navigate={navigate}>Diễn đàn AI</AppLink>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <section>
+        <SectionHeading title="Bài viết liên quan" description="Đọc tiếp các ghi chú AI có thể áp dụng ngay cho công việc và bài dự thi." />
+        <div className="aiNewsRelatedGrid">
+          {relatedArticles.map((item) => (
+            <AppLink key={item.id} href={`/ai-news/${item.id}`} navigate={navigate} className="card aiNewsRelatedCard">
+              <img src={item.image} alt={item.title} loading="lazy" />
+              <span>{item.category}</span>
+              <strong>{item.title}</strong>
+              <small>{item.date} · {item.readTime}</small>
             </AppLink>
           ))}
         </div>
@@ -2709,7 +2804,7 @@ function SearchPage({ navigate }: { navigate: (href: string) => void }) {
     const keyword = query.trim().toLowerCase();
     const items = [
       ...challenges.map((challenge) => ({ title: challenge.title, type: 'Thử thách', description: challenge.description, tags: [challenge.targetGroup, `Tuần ${challenge.week}`], href: `/challenges/${challenge.id}` })),
-      ...aiNewsItems.map((item) => ({ title: item.title, type: 'Tin tức AI', description: item.summary, tags: [item.category, ...item.tags], href: '/ai-news' })),
+      ...aiNewsItems.map((item) => ({ title: item.title, type: 'Tin tức AI', description: item.summary, tags: [item.category, ...item.tags], href: `/ai-news/${item.id}` })),
       { title: 'Diễn đàn AI', type: 'Cộng đồng', description: 'Trao đổi kinh nghiệm sử dụng AI, chia sẻ prompt và hỏi đáp công cụ giữa các phòng/ban.', tags: ['diễn đàn', 'AI trong công việc', 'Chia sẻ prompt'], href: '/forum' },
       { title: 'Thể lệ cuộc thi', type: 'Thể lệ', description: 'Tiêu chí chấm điểm, giải thưởng, thời gian và tổ chức thực hiện.', tags: ['100 điểm', 'giải thưởng'], href: '/rules' },
       { title: 'Thông báo mở tuần 1', type: 'Tin cập nhật', description: 'Tuần 1 nhận bài đến 15h00 ngày 06/7/2026.', tags: ['deadline', 'tuần 1'], href: '/challenges' },

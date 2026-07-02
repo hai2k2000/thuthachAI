@@ -49,7 +49,16 @@ img {
 }
 
 .material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
   font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
   vertical-align: middle;
 }
 
@@ -1986,6 +1995,34 @@ td {
   margin-top: 2px;
 }
 
+.aiNewsTitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.aiNewsTitleLink:hover {
+  color: #b9151b;
+}
+
+.aiNewsReadMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.aiNewsReadMore .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.aiNewsReadMore:hover {
+  color: #b9151b;
+}
+
 .aiNewsResourcePanel {
   display: grid;
   gap: 18px;
@@ -2024,6 +2061,180 @@ td {
 
 .aiNewsResourceLink span:not(.material-symbols-outlined) {
   color: var(--muted);
+}
+
+.aiNewsDetailPage {
+  display: grid;
+  gap: 28px;
+}
+
+.aiNewsDetailHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+  gap: 28px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.aiNewsDetailHero > div {
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  min-width: 0;
+  padding: 34px;
+}
+
+.aiNewsDetailHero h1 {
+  margin: 0;
+  color: var(--primary);
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.08;
+}
+
+.aiNewsDetailHero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.aiNewsDetailHero > img {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  object-fit: cover;
+}
+
+.aiNewsDetailLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.aiNewsArticleBody {
+  display: grid;
+  gap: 18px;
+  padding: 30px;
+}
+
+.aiNewsArticleBody p {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.aiNewsArticleNote {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 6px;
+  padding: 16px;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius-sm);
+  background: #fff4f4;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.aiNewsArticleNote .material-symbols-outlined {
+  color: var(--primary);
+}
+
+.aiNewsDetailAside {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 16px;
+}
+
+.aiNewsDetailAside .card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.aiNewsDetailAside h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.aiNewsDetailAside ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.aiNewsSideLinks {
+  display: grid;
+  gap: 8px;
+}
+
+.aiNewsSideLinks a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.aiNewsSideLinks a:hover {
+  border-color: var(--primary-soft);
+  background: #fff4f4;
+  color: var(--primary);
+}
+
+.aiNewsRelatedGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.aiNewsRelatedCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.aiNewsRelatedCard img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.aiNewsRelatedCard span {
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.aiNewsRelatedCard strong {
+  color: var(--primary);
+  line-height: 1.3;
+}
+
+.aiNewsRelatedCard small {
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .forumPage {
@@ -3085,6 +3296,8 @@ td {
   .detailGrid,
   .aiNewsHero,
   .aiNewsFeatured,
+  .aiNewsDetailHero,
+  .aiNewsDetailLayout,
   .forumHero,
   .forumLayout,
   .labBento,
@@ -3098,6 +3311,10 @@ td {
     position: static;
   }
 
+  .aiNewsDetailAside {
+    position: static;
+  }
+
   .forumSide {
     position: static;
   }
@@ -3105,6 +3322,7 @@ td {
   .cardGrid.four,
   .cardGrid.three,
   .aiNewsGrid,
+  .aiNewsRelatedGrid,
   .rulesGrid,
   .scoreList,
   .badgeGrid,
@@ -3225,6 +3443,7 @@ td {
   .cardGrid.four,
   .aiNewsGrid,
   .aiNewsCard,
+  .aiNewsRelatedGrid,
   .forumReplyForm,
   .rulesGrid,
   .scoreList,
@@ -3254,6 +3473,19 @@ td {
 
   .aiNewsHero {
     padding: 22px 18px;
+  }
+
+  .aiNewsDetailHero > div,
+  .aiNewsArticleBody {
+    padding: 22px 18px;
+  }
+
+  .aiNewsDetailHero h1 {
+    font-size: 34px;
+  }
+
+  .aiNewsDetailHero > img {
+    min-height: 260px;
   }
 
   .aiNewsHeroStats span {

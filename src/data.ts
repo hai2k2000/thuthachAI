@@ -135,6 +135,7 @@ export const routeMap = [
   '/leaderboard',
   '/ai-lab',
   '/ai-news',
+  '/ai-news/ai-newsroom-workflow',
   '/forum',
   '/contact',
   '/admin',
@@ -161,8 +162,10 @@ export const aiNewsItems: AINewsItem[] = [
     image: heroImage,
     tags: ['tòa soạn', 'kiểm chứng', 'quy trình'],
     content: [
-      'AI phù hợp nhất khi đóng vai trò trợ lý chuẩn bị: gom ý, đề xuất câu hỏi phỏng vấn, dựng cấu trúc bài và tóm tắt tài liệu nền.',
-      'Mỗi đầu ra cần được đối chiếu với nguồn chính thức, ghi lại prompt đã dùng và nêu rõ phần nào do con người quyết định.',
+      'Trong tòa soạn, AI phát huy tốt nhất ở phần chuẩn bị: gom ý, đề xuất câu hỏi phỏng vấn, dựng cấu trúc bài và tóm tắt tài liệu nền. Đây là các phần tốn thời gian nhưng vẫn cần con người định hướng góc tiếp cận.',
+      'Một quy trình an toàn nên bắt đầu bằng mô tả đề tài, đối tượng độc giả, nguồn dữ liệu đang có và ràng buộc đạo đức nghề nghiệp. AI có thể đề xuất dàn ý, nhưng phóng viên cần chọn lại các luận điểm có giá trị tin tức.',
+      'Khi chuyển sang bản nháp, hãy yêu cầu AI phân biệt rõ phần dữ kiện, phần nhận định và phần cần kiểm chứng thêm. Cách này giúp biên tập viên nhìn nhanh khu vực rủi ro trước khi bài viết đi vào khâu hoàn thiện.',
+      'Mỗi đầu ra cần được đối chiếu với nguồn chính thức, ghi lại prompt đã dùng và nêu rõ phần nào do con người quyết định. Bài dự thi sẽ thuyết phục hơn nếu thể hiện được cả lợi ích lẫn giới hạn của AI trong quy trình.',
     ],
   },
   {
@@ -176,8 +179,10 @@ export const aiNewsItems: AINewsItem[] = [
     image: archiveImage,
     tags: ['ChatGPT', 'Gemini', 'Canva', 'Gamma'],
     content: [
-      'Nhóm phóng viên có thể ưu tiên công cụ nghiên cứu và tóm tắt nguồn; nhóm tổng hợp nên thử luồng phân loại văn bản; nhóm kinh doanh nên kết hợp công cụ trình bày proposal.',
-      'Không đưa dữ liệu mật, tài liệu nội bộ nhạy cảm hoặc thông tin chưa được phép công bố vào công cụ AI công khai.',
+      'Nhóm phóng viên có thể ưu tiên công cụ nghiên cứu, tóm tắt nguồn và gợi ý câu hỏi. Nhóm tổng hợp nên thử luồng phân loại văn bản, chuẩn hóa biểu mẫu và rút ý chính từ tài liệu dài.',
+      'Nhóm kinh doanh có thể kết hợp công cụ viết đề xuất, tạo slide và phác thảo gói truyền thông. Với mỗi công cụ, nên ghi rõ dùng vào bước nào, đầu vào là gì và đầu ra được biên tập lại ra sao.',
+      'Một mẹo nhỏ là không thử quá nhiều nền tảng trong cùng một bài dự thi. Chọn 1-2 công cụ chính, giải thích lý do lựa chọn và đo sự khác biệt trước/sau AI sẽ giúp bài rõ điểm hơn.',
+      'Không đưa dữ liệu mật, tài liệu nội bộ nhạy cảm hoặc thông tin chưa được phép công bố vào công cụ AI công khai. Nếu cần minh họa, hãy ẩn danh hoặc dùng dữ liệu mẫu đã được phép chia sẻ.',
     ],
   },
   {
@@ -191,8 +196,10 @@ export const aiNewsItems: AINewsItem[] = [
     image: mediaImage,
     tags: ['bài dự thi', 'prompt', 'nhân rộng'],
     content: [
-      'Ban Giám khảo cần nhìn thấy tác động thực tế: tiết kiệm thời gian, giảm lỗi, tăng chất lượng nội dung hoặc mở ra sản phẩm truyền thông mới.',
-      'Nhật ký tác nghiệp nên ghi theo từng bước để người khác có thể học lại quy trình, không chỉ xem sản phẩm cuối.',
+      'Một bài dự thi mạnh không chỉ nộp sản phẩm cuối. Bài cần chỉ ra vấn đề ban đầu, cách người dự thi dùng AI để xử lý vấn đề và kết quả có khác gì so với cách làm cũ.',
+      'Ban Giám khảo cần nhìn thấy tác động thực tế: tiết kiệm thời gian, giảm lỗi, tăng chất lượng nội dung hoặc mở ra sản phẩm truyền thông mới. Những con số đơn giản như thời gian xử lý, số vòng sửa hoặc số ý tưởng tạo được đều hữu ích.',
+      'Nhật ký tác nghiệp nên ghi theo từng bước để người khác có thể học lại quy trình, không chỉ xem sản phẩm cuối. Prompt nên đặt cạnh bối cảnh sử dụng, đầu vào mẫu và cách đánh giá đầu ra.',
+      'Nếu bài có khả năng nhân rộng cho phòng/ban khác, hãy mô tả điều kiện áp dụng lại: ai dùng được, cần dữ liệu gì, cần kiểm tra bước nào và khi nào không nên dùng AI.',
     ],
   },
   {
@@ -206,8 +213,10 @@ export const aiNewsItems: AINewsItem[] = [
     image: archiveImage,
     tags: ['an toàn dữ liệu', 'lưu trữ', 'quyền truy cập'],
     content: [
+      'Trước khi đưa dữ liệu vào AI, hãy tự hỏi ba câu: dữ liệu này có chứa thông tin cá nhân không, có phải tài liệu nội bộ chưa công bố không và người nhận đầu ra có quyền xem dữ liệu này không.',
       'Với dữ liệu nội bộ, hãy tách phần có thể chia sẻ và phần cần giữ kín trước khi hỏi AI. Ưu tiên mô tả ngữ cảnh thay vì dán nguyên văn tài liệu nhạy cảm.',
-      'Kết quả AI chỉ là bản tham khảo. Người phụ trách vẫn phải kiểm tra tính đúng, đủ và phù hợp với quy định cơ quan.',
+      'Nếu cần phân tích tài liệu dài, người dùng có thể thay tên riêng bằng ký hiệu, rút gọn số liệu nhạy cảm hoặc tạo bảng dữ liệu mẫu. Điều này vẫn giúp AI hiểu nhiệm vụ mà không làm lộ thông tin không cần thiết.',
+      'Kết quả AI chỉ là bản tham khảo. Người phụ trách vẫn phải kiểm tra tính đúng, đủ và phù hợp với quy định cơ quan trước khi dùng trong bài viết, báo cáo hoặc sản phẩm truyền thông.',
     ],
   },
   {
@@ -221,8 +230,27 @@ export const aiNewsItems: AINewsItem[] = [
     image: newsroomImage,
     tags: ['Kho Prompt', 'chuẩn hóa', 'chia sẻ'],
     content: [
-      'Trước khi công khai prompt, hãy thử với ít nhất hai trường hợp khác nhau để xem đầu ra có nhất quán không.',
-      'Nên bổ sung cảnh báo về nguồn dữ liệu, giới hạn sử dụng và bước kiểm chứng để tránh hiểu nhầm AI là kết quả cuối cùng.',
+      'Một prompt đưa vào Kho Prompt nên đủ rõ để người khác dùng lại mà không phải hỏi thêm quá nhiều. Các phần tối thiểu gồm vai trò của AI, bối cảnh công việc, dữ liệu đầu vào, định dạng đầu ra và tiêu chí kiểm tra.',
+      'Trước khi công khai prompt, hãy thử với ít nhất hai trường hợp khác nhau để xem đầu ra có nhất quán không. Nếu prompt chỉ hoạt động với một tình huống rất hẹp, hãy ghi rõ phạm vi sử dụng.',
+      'Prompt tốt thường có ví dụ đầu vào và ví dụ đầu ra. Người đọc sẽ hiểu nhanh hơn khi thấy một mẫu hoàn chỉnh thay vì chỉ đọc mô tả chung.',
+      'Nên bổ sung cảnh báo về nguồn dữ liệu, giới hạn sử dụng và bước kiểm chứng để tránh hiểu nhầm AI là kết quả cuối cùng. Kho Prompt càng rõ ràng thì khả năng nhân rộng trong cơ quan càng cao.',
+    ],
+  },
+  {
+    id: 'ai-workday-routine',
+    title: 'Quy trình 30 phút mỗi ngày để biến AI thành thói quen làm việc',
+    category: 'Góc ứng dụng cuộc thi',
+    summary:
+      'Một lịch thực hành ngắn giúp mỗi phòng/ban thử AI đều đặn: chọn một việc nhỏ, viết prompt, so sánh kết quả và lưu lại kinh nghiệm dùng được ngay.',
+    date: '28/6/2026',
+    readTime: '4 phút đọc',
+    image: heroImage,
+    tags: ['thói quen AI', 'thực hành', 'năng suất'],
+    content: [
+      'Không cần bắt đầu bằng một dự án lớn. Mỗi ngày, hãy chọn một tác vụ nhỏ đang lặp lại nhiều lần như tóm tắt văn bản, lập danh sách câu hỏi, chuẩn hóa email hoặc phác thảo nội dung truyền thông.',
+      'Dành 10 phút đầu để viết prompt thật rõ: mục tiêu, bối cảnh, đầu vào, định dạng đầu ra và tiêu chí đánh giá. Nếu prompt chưa tốt, hãy sửa prompt trước khi đổi sang công cụ khác.',
+      '10 phút tiếp theo dùng để so sánh kết quả AI với cách làm thông thường. Người dùng nên ghi lại điểm AI làm nhanh, điểm AI làm sai và phần nào vẫn cần kinh nghiệm chuyên môn của con người.',
+      '10 phút cuối là lưu lại prompt, bài học và ví dụ đầu ra vào kho chung của nhóm. Khi thói quen này được duy trì, cuộc thi không chỉ tạo ra bài dự thi mà còn hình thành năng lực AI bền vững cho từng phòng/ban.',
     ],
   },
 ];
@@ -737,4 +765,8 @@ export function findPrompt(id: string) {
 
 export function findSubmission(id: string) {
   return submissions.find((submission) => submission.id === id);
+}
+
+export function findAINewsItem(id: string) {
+  return aiNewsItems.find((item) => item.id === id);
 }

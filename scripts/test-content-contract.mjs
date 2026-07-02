@@ -20,6 +20,7 @@ const requiredRoutes = [
   '/leaderboard',
   '/ai-lab',
   '/ai-news',
+  '/ai-news/ai-newsroom-workflow',
   '/forum',
   '/contact',
   '/admin',
@@ -167,6 +168,12 @@ for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài d�
 
 for (const aiNewsHook of ['aiNewsItems', 'Tin tức AI', 'AI trong tòa soạn', 'Cập nhật công cụ AI', 'Góc ứng dụng cuộc thi', 'aiNewsHero', 'aiNewsGrid']) {
   assert(`${data}\n${app}\n${components}\n${styles}`.includes(aiNewsHook), `Missing AI news hook/content: ${aiNewsHook}`);
+}
+const aiNewsItemsBlock = data.match(/export const aiNewsItems: AINewsItem\[] = \[([\s\S]*?)\];/)?.[1] || '';
+const aiNewsCount = (aiNewsItemsBlock.match(/\n\s+id: '/g) || []).length;
+assert(aiNewsCount >= 6, `Expected at least 6 AI news items, found ${aiNewsCount}`);
+for (const aiNewsDetailHook of ['findAINewsItem', 'AiNewsDetailPage', 'aiNewsDetailHero', 'aiNewsArticleBody', 'aiNewsRelatedGrid', '/ai-news/${item.id}']) {
+  assert(`${data}\n${app}\n${styles}`.includes(aiNewsDetailHook), `Missing AI news detail hook: ${aiNewsDetailHook}`);
 }
 
 for (const forumHook of ['Diễn đàn AI', 'forumThreads', 'forumThreadForm', 'forumReplyForm', '/api/forum/threads', '/api/forum/threads/:id/replies', 'AI trong công việc', 'Chia sẻ prompt', 'Trao đổi kinh nghiệm sử dụng AI']) {
