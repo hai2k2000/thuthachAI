@@ -517,6 +517,105 @@ img {
   padding: 20px;
 }
 
+.communityVoteBox {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.communityScoreRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.communityScoreRow span {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.communityScoreRow strong {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.communityVoteActions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.communityVoteButton {
+  min-width: 0;
+  min-height: 64px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.communityVoteButton:hover {
+  border-color: var(--primary-soft);
+  background: #fff4f4;
+}
+
+.communityVoteButton span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.communityVoteButton strong {
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.communityVoteButton:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+}
+
+.communityVoteButton.isVoted {
+  background: var(--surface-low);
+}
+
+.communityVotedBadge,
+.communityVoteNotice {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.communityVoteNotice {
+  margin: -4px 0 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius-sm);
+  background: #fff4f4;
+}
+
 .card h3,
 .card h2 {
   margin: 0;
@@ -1857,7 +1956,7 @@ td {
 
 .adminOverviewGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 14px;
   margin: 22px 0;
 }
@@ -2285,6 +2384,11 @@ td {
   .countdownGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: none;
+  }
+
+  .communityScoreRow,
+  .communityVoteActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .countdownUnit {

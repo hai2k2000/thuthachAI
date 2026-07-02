@@ -297,9 +297,38 @@ type PublicFeaturedSubmission = {
   processSummary: string;
   finalResult: string;
   score: number;
+  communityVoteCount: number;
+  communityReactions: CommunityReactions;
+  viewerHasVoted: boolean;
   fileCount: number;
   createdAt: string;
 };
+
+type CommunityVoteReaction = 'favorite' | 'useful' | 'creative' | 'applicable' | 'inspiring';
+type CommunityReactions = Record<CommunityVoteReaction, number>;
+
+const communityDeviceStorageKey = 'aiChallengeCommunityDeviceId';
+const communityVoteOptions: Array<{ id: CommunityVoteReaction; label: string; icon: string }> = [
+  { id: 'favorite', label: 'Yêu thích', icon: 'favorite' },
+  { id: 'useful', label: 'Hữu ích', icon: 'thumb_up' },
+  { id: 'creative', label: 'Sáng tạo', icon: 'auto_awesome' },
+  { id: 'applicable', label: 'Dễ áp dụng', icon: 'task_alt' },
+  { id: 'inspiring', label: 'Truyền cảm hứng', icon: 'emoji_objects' },
+];
+
+function getCommunityDeviceId() {
+  try {
+    const existing = window.localStorage.getItem(communityDeviceStorageKey);
+    if (existing) return existing;
+    const generated = window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    window.localStorage.setItem(communityDeviceStorageKey, generated);
+    return generated;
+  } catch {
+    return `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+}
 
 type AdminSubmission = PublicFeaturedSubmission & {
   contact: string;
@@ -1073,10 +1102,13 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
   const [department, setDepartment] = useState('Tất cả');
   const [publicSubmissions, setPublicSubmissions] = useState<PublicFeaturedSubmission[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [votingId, setVotingId] = useState('');
+  const [voteNotice, setVoteNotice] = useState('');
 
   useEffect(() => {
     let active = true;
-    fetch('/api/public/featured')
+    const deviceId = getCommunityDeviceId();
+    fetch(`/api/public/featured?deviceId=${encodeURIComponent(deviceId)}`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load featured submissions')))
       .then((data: { submissions?: PublicFeaturedSubmission[] }) => {
         if (active) setPublicSubmissions(data.submissions ?? []);
@@ -1105,6 +1137,43 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
     });
   }, [publicSubmissions, query, week, department]);
 
+  async function voteForSubmission(id: string, reaction: CommunityVoteReaction) {
+    const deviceId = getCommunityDeviceId();
+    setVotingId(id);
+    setVoteNotice('');
+    try {
+      const response = await fetch(`/api/public/submissions/${encodeURIComponent(id)}/vote`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ deviceId, reaction }),
+      });
+      const data = await response.json().catch(() => ({} as {
+        communityVoteCount?: number;
+        communityReactions?: CommunityReactions;
+        viewerHasVoted?: boolean;
+        errors?: string[];
+      }));
+      if (!response.ok && response.status !== 409) {
+        throw new Error(data.errors?.join(' ') || 'Không thể ghi nhận bình chọn.');
+      }
+      setPublicSubmissions((current) => current.map((submission) => (
+        submission.id === id
+          ? {
+            ...submission,
+            communityVoteCount: data.communityVoteCount ?? submission.communityVoteCount,
+            communityReactions: data.communityReactions ?? submission.communityReactions,
+            viewerHasVoted: data.viewerHasVoted ?? true,
+          }
+          : submission
+      )));
+      setVoteNotice(response.status === 409 ? 'Thiết bị này đã bình chọn bài dự thi này.' : 'Đã ghi nhận bình chọn cộng đồng.');
+    } catch (error) {
+      setVoteNotice(error instanceof Error ? error.message : 'Không thể ghi nhận bình chọn.');
+    } finally {
+      setVotingId('');
+    }
+  }
+
   return (
     <PageContainer>
       <Breadcrumb navigate={navigate} items={[{ label: 'Trang chủ', href: '/' }, { label: 'Bài tiêu biểu' }]} />
@@ -1119,6 +1188,7 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
         <SelectFilter label="Tuần thi" value={week} options={['Tất cả', '1', '2', '3', '4', '5']} onChange={setWeek} />
         <SelectFilter label="Phòng/ban" value={department} options={departments} onChange={setDepartment} />
       </FilterPanel>
+      {voteNotice ? <p className="communityVoteNotice" role="status">{voteNotice}</p> : null}
       {filtered.length ? (
         <div className="cardGrid two">
           {filtered.map((submission) => (
@@ -1126,7 +1196,7 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
               <div className="cardBody">
                 <div className="cardMeta">
                   <Badge tone="red">Đã duyệt</Badge>
-                  <span>{submission.score} pts</span>
+                  <span>Điểm BGK: {submission.score}</span>
                 </div>
                 <h3>{submission.title}</h3>
                 <p>{submission.problem}</p>
@@ -1140,6 +1210,11 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
                 />
                 <DetailSection title="Nhật ký tác nghiệp tóm tắt" items={[submission.processSummary]} />
                 <DetailSection title="Kết quả chia sẻ" items={[submission.finalResult || 'Đã có file bài dự thi đính kèm trong hệ thống.']} />
+                <CommunityVoteBox
+                  submission={submission}
+                  voting={votingId === submission.id}
+                  onVote={voteForSubmission}
+                />
               </div>
             </article>
           ))}
@@ -1151,6 +1226,43 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
         />
       )}
     </PageContainer>
+  );
+}
+
+function CommunityVoteBox({
+  submission,
+  voting,
+  onVote,
+}: {
+  submission: PublicFeaturedSubmission;
+  voting: boolean;
+  onVote: (id: string, reaction: CommunityVoteReaction) => void;
+}) {
+  return (
+    <div className="communityVoteBox">
+      <div className="communityScoreRow">
+        <span><Icon name="verified" /> Điểm BGK <strong>{submission.score}</strong></span>
+        <span><Icon name="how_to_vote" /> Cộng đồng <strong>{submission.communityVoteCount || 0}</strong></span>
+      </div>
+      <div className="communityVoteActions" aria-label={`Bình chọn cộng đồng cho ${submission.title}`}>
+        {communityVoteOptions.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`communityVoteButton${submission.viewerHasVoted ? ' isVoted' : ''}`}
+            disabled={submission.viewerHasVoted || voting}
+            onClick={() => onVote(submission.id, option.id)}
+          >
+            <Icon name={option.icon} />
+            <span>{option.label}</span>
+            <strong>{submission.communityReactions?.[option.id] || 0}</strong>
+          </button>
+        ))}
+      </div>
+      {submission.viewerHasVoted ? (
+        <span className="communityVotedBadge"><Icon name="check_circle" /> Đã bình chọn</span>
+      ) : null}
+    </div>
   );
 }
 
@@ -1526,6 +1638,7 @@ function AdminPage() {
 
   const pendingScoringCount = submissions.filter((submission) => submission.reviewStatus !== 'scored').length;
   const scoredCount = submissions.filter((submission) => submission.reviewStatus === 'scored').length;
+  const communityVoteTotal = submissions.reduce((total, submission) => total + (submission.communityVoteCount || 0), 0);
 
   return (
     <PageContainer>
@@ -1583,6 +1696,7 @@ function AdminPage() {
         <StatCard value={String(submissions.length)} label="Bài dự thi" />
         <StatCard value={String(pendingScoringCount)} label="Chờ chấm" />
         <StatCard value={String(scoredCount)} label="Đã chấm" accent />
+        <StatCard value={String(communityVoteTotal)} label="Bình chọn" />
         <StatCard value={String(adminUsers.length)} label="Tài khoản" />
       </section>
 
@@ -1612,6 +1726,7 @@ function AdminPage() {
                     ['Tuần', `Tuần ${submission.week}`],
                     ['Nhóm nhiệm vụ', submission.challengeGroup],
                     ['Công cụ AI', submission.aiTools],
+                    ['Bình chọn cộng đồng', `${submission.communityVoteCount || 0} lượt`],
                   ]}
                 />
                 <p>{submission.problem}</p>

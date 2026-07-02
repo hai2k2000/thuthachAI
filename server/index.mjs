@@ -16,6 +16,11 @@ import {
   verifyPassword,
 } from './admin-users.mjs';
 import {
+  createVoterKey,
+  normalizeCommunityVoteInput,
+  summarizeCommunityVotes,
+} from './community-votes.mjs';
+import {
   createSubmissionId,
   formatSubmissionsCsv,
   mapSubmissionRow,
@@ -32,6 +37,7 @@ const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'https://thuthachai.io.vn';
 const adminToken = process.env.SUBMISSIONS_ADMIN_TOKEN || '';
 const adminUsername = process.env.ADMIN_USERNAME || '';
 const adminPassword = process.env.ADMIN_PASSWORD || '';
+const communityVoteSecret = process.env.COMMUNITY_VOTE_SECRET || 'thuthachai-community-vote-v1';
 const maxUploadMb = Number(process.env.MAX_UPLOAD_MB || 25);
 const maxUploadFiles = Number(process.env.MAX_UPLOAD_FILES || 5);
 const maxSubmissionFiles = Number(process.env.MAX_SUBMISSION_FILES || 3);
@@ -102,6 +108,15 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'active',
     password_hash TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS community_votes (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    submission_id TEXT NOT NULL,
+    voter_key TEXT NOT NULL,
+    reaction TEXT NOT NULL,
+    UNIQUE(submission_id, voter_key)
+  );
 `);
 
 ensureSubmissionColumn('submission_files_json', "TEXT NOT NULL DEFAULT '[]'");
@@ -148,6 +163,17 @@ const listPublicPrompts = db.prepare("SELECT * FROM submissions WHERE public_pro
 const listLeaderboard = db.prepare("SELECT * FROM submissions WHERE score > 0 ORDER BY score DESC, created_at ASC");
 const listFiles = db.prepare('SELECT submission_files_json, files_json FROM submissions ORDER BY created_at DESC');
 const findSubmissionById = db.prepare('SELECT * FROM submissions WHERE id = ?');
+const listCommunityVotesBySubmission = db.prepare('SELECT reaction FROM community_votes WHERE submission_id = ?');
+const findCommunityVoteByKey = db.prepare('SELECT id FROM community_votes WHERE submission_id = ? AND voter_key = ?');
+const insertCommunityVote = db.prepare(`
+  INSERT INTO community_votes (
+    id,
+    created_at,
+    submission_id,
+    voter_key,
+    reaction
+  ) VALUES (?, ?, ?, ?, ?)
+`);
 const updateSubmissionReview = db.prepare(`
   UPDATE submissions
   SET review_status = ?,
@@ -350,11 +376,70 @@ app.get('/api/public/prompts', (_request, response) => {
   response.json({ ok: true, prompts });
 });
 
-app.get('/api/public/featured', (_request, response) => {
+app.get('/api/public/featured', (request, response) => {
+  const deviceId = cleanText(request.query?.deviceId, 128);
   const submissions = listPublicFeatured
     .all()
-    .map((row) => buildPublicFeatured(mapSubmissionRow(row, { publicBaseUrl, token: adminToken })));
+    .map((row) => buildPublicFeatured(mapSubmissionWithCommunity(row, { publicBaseUrl, token: adminToken, deviceId })));
   response.json({ ok: true, submissions });
+});
+
+app.post('/api/public/submissions/:id/vote', (request, response) => {
+  const id = String(request.params.id || '');
+  const existing = findSubmissionById.get(id);
+  if (!existing) {
+    response.status(404).json({ ok: false, errors: ['Khong tim thay bai du thi.'] });
+    return;
+  }
+  if (existing.featured_status !== 'approved') {
+    response.status(403).json({ ok: false, errors: ['Bai du thi chua mo binh chon cong dong.'] });
+    return;
+  }
+
+  const validation = normalizeCommunityVoteInput(request.body);
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
+    return;
+  }
+
+  const voterKey = createVoterKey({
+    submissionId: id,
+    deviceId: validation.vote.deviceId,
+    ip: getRequestIp(request),
+    userAgent: request.get('user-agent') || '',
+    secret: communityVoteSecret,
+  });
+  const existingVote = findCommunityVoteByKey.get(id, voterKey);
+  const community = getCommunityVoteSummary(id);
+
+  if (existingVote) {
+    response.status(409).json({
+      ok: false,
+      voted: true,
+      errors: ['Thiet bi nay da binh chon bai du thi nay.'],
+      communityVoteCount: community.total,
+      communityReactions: community.reactions,
+      viewerHasVoted: true,
+    });
+    return;
+  }
+
+  insertCommunityVote.run(
+    `CV-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
+    new Date().toISOString(),
+    id,
+    voterKey,
+    validation.vote.reaction,
+  );
+  const updatedCommunity = getCommunityVoteSummary(id);
+  response.status(201).json({
+    ok: true,
+    voted: true,
+    submissionId: id,
+    communityVoteCount: updatedCommunity.total,
+    communityReactions: updatedCommunity.reactions,
+    viewerHasVoted: true,
+  });
 });
 
 app.get('/api/public/leaderboard', (_request, response) => {
@@ -389,7 +474,7 @@ app.get('/api/submissions/export.csv', requireAdminToken, (_request, response) =
 app.get('/api/admin/submissions', requireAdminToken, (_request, response) => {
   const records = listSubmissions
     .all()
-    .map((row) => mapSubmissionRow(row, { publicBaseUrl, token: adminToken }));
+    .map((row) => mapSubmissionWithCommunity(row, { publicBaseUrl, token: adminToken }));
   response.json({ ok: true, submissions: records });
 });
 
@@ -409,7 +494,7 @@ app.patch('/api/admin/submissions/:id', requireAdminToken, (request, response) =
   const judgeNote = cleanText(request.body?.judgeNote ?? current.judgeNote, 2000);
 
   updateSubmissionReview.run(reviewStatus, promptStatus, featuredStatus, score, judgeNote, id);
-  const updated = mapSubmissionRow(findSubmissionById.get(id), { publicBaseUrl, token: adminToken });
+  const updated = mapSubmissionWithCommunity(findSubmissionById.get(id), { publicBaseUrl, token: adminToken });
   response.json({ ok: true, submission: updated });
 });
 
@@ -609,6 +694,35 @@ function cleanText(value, max = 500) {
   return String(value ?? '').trim().slice(0, max);
 }
 
+function getRequestIp(request) {
+  const forwarded = String(request.get('x-forwarded-for') || '').split(',')[0].trim();
+  return forwarded || request.socket?.remoteAddress || request.ip || '';
+}
+
+function mapSubmissionWithCommunity(row, { publicBaseUrl = '', token = '', deviceId = '' } = {}) {
+  const submission = mapSubmissionRow(row, { publicBaseUrl, token });
+  const community = getCommunityVoteSummary(submission.id);
+  const cleanDeviceId = cleanText(deviceId, 128);
+  const viewerHasVoted = cleanDeviceId
+    ? Boolean(findCommunityVoteByKey.get(submission.id, createVoterKey({
+      submissionId: submission.id,
+      deviceId: cleanDeviceId,
+      secret: communityVoteSecret,
+    })))
+    : false;
+
+  return {
+    ...submission,
+    communityVoteCount: community.total,
+    communityReactions: community.reactions,
+    viewerHasVoted,
+  };
+}
+
+function getCommunityVoteSummary(submissionId) {
+  return summarizeCommunityVotes(listCommunityVotesBySubmission.all(submissionId));
+}
+
 function pickStatus(value, allowed, fallback) {
   const normalized = cleanText(value, 40);
   return allowed.includes(normalized) ? normalized : fallback;
@@ -666,6 +780,9 @@ function buildPublicFeatured(submission) {
     processSummary: submission.processSummary,
     finalResult: submission.finalResult,
     score: submission.score,
+    communityVoteCount: submission.communityVoteCount || 0,
+    communityReactions: submission.communityReactions || {},
+    viewerHasVoted: Boolean(submission.viewerHasVoted),
     fileCount: submission.files.length,
     createdAt: submission.createdAt,
   };

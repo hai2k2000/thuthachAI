@@ -107,4 +107,8 @@ for (const adminDashboardHook of ['adminOverviewGrid', 'adminModuleNav', 'adminS
   assert(`${app}\n${styles}\n${server}`.includes(adminDashboardHook), `Missing admin dashboard hook: ${adminDashboardHook}`);
 }
 
+for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiChallengeCommunityDeviceId', '/api/public/submissions/:id/vote', 'community_votes']) {
+  assert(`${app}\n${styles}\n${server}`.includes(communityVoteHook), `Missing community vote hook: ${communityVoteHook}`);
+}
+
 console.log('Content contract passed');
