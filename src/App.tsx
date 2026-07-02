@@ -237,12 +237,12 @@ const assistantAnswers: AssistantAnswer[] = [
   },
 ];
 
-const assistantFallback: AssistantMessage = {
+const assistantOutOfScopeFallback: AssistantMessage = {
   id: 'fallback',
   role: 'bot',
-  text: 'Mình chưa tìm thấy câu trả lời thật khớp. Anh/chị có thể hỏi về hạn nộp, cách nộp bài, nhóm dự thi, ảnh đại diện, bình chọn cộng đồng hoặc gửi liên hệ cho Ban tổ chức.',
-  actions: [{ label: 'Xem thể lệ', href: '/rules' }, { label: 'Liên hệ', href: '/contact' }],
-  relatedQuestions: ['Cách nộp bài dự thi', 'Diễn đàn AI dùng thế nào?', 'Liên hệ Ban tổ chức'],
+  text: 'Mình xin phép không trả lời nội dung ngoài phạm vi cuộc thi Thử thách AI. Anh/chị có thể quay lại các nội dung của cuộc thi như thể lệ, hạn nộp, cách nộp bài, nhóm dự thi, bình chọn cộng đồng, Kho Prompt hoặc Diễn đàn AI.',
+  actions: [{ label: 'Xem thể lệ', href: '/rules' }, { label: 'Nộp bài', href: '/submit' }, { label: 'Diễn đàn AI', href: '/forum' }],
+  relatedQuestions: ['Cách nộp bài dự thi', 'Hạn nộp bài tuần 1', 'Diễn đàn AI dùng thế nào?'],
 };
 
 function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
@@ -268,7 +268,7 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
     const matched = matchAssistantAnswer(cleanQuestion);
     const response = matched
       ? { id: `bot-${Date.now()}`, role: 'bot' as const, text: matched.answer, actions: matched.actions, relatedQuestions: matched.relatedQuestions }
-      : { ...assistantFallback, id: `bot-${Date.now()}` };
+      : { ...assistantOutOfScopeFallback, id: `bot-${Date.now()}` };
     setMessages((current) => [
       ...current,
       { id: `user-${Date.now()}`, role: 'user', text: cleanQuestion },

@@ -162,6 +162,9 @@ for (const assistantTypingHook of ['typingMessageId', 'assistantTypingBubble', '
 for (const assistantRelatedHook of ['relatedQuestions', 'assistantRelatedQuestions', 'Câu hỏi liên quan']) {
   assert(`${app}\n${styles}`.includes(assistantRelatedHook), `Missing assistant related question hook: ${assistantRelatedHook}`);
 }
+for (const assistantScopeHook of ['assistantOutOfScopeFallback', 'không trả lời nội dung ngoài phạm vi cuộc thi Thử thách AI', 'quay lại các nội dung của cuộc thi']) {
+  assert(app.includes(assistantScopeHook), `Assistant bot must refuse out-of-scope questions and guide users back to the contest: ${assistantScopeHook}`);
+}
 for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài dự thi', 'Nhóm dự thi', 'Ảnh đại diện bài dự thi', 'Bình chọn cộng đồng', 'Liên hệ Ban tổ chức']) {
   assert(app.includes(assistantAnswer), `Assistant bot must answer common question: ${assistantAnswer}`);
 }
