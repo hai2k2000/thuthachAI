@@ -249,7 +249,6 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [typingMessageId, setTypingMessageId] = useState('');
-  const [typedAssistantText, setTypedAssistantText] = useState('');
   const typingTimer = useRef<number | null>(null);
   const [messages, setMessages] = useState<AssistantMessage[]>([{
     id: 'welcome',
@@ -275,16 +274,13 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
       response,
     ]);
     setTypingMessageId(response.id);
-    setTypedAssistantText('');
-    let nextLength = 0;
+    let typingProgress = 0;
     typingTimer.current = window.setInterval(() => {
-      nextLength += 2;
-      setTypedAssistantText(response.text.slice(0, nextLength));
-      if (nextLength >= response.text.length) {
+      typingProgress += 2;
+      if (typingProgress >= response.text.length) {
         if (typingTimer.current) window.clearInterval(typingTimer.current);
         typingTimer.current = null;
         setTypingMessageId('');
-        setTypedAssistantText('');
       }
     }, 18);
     setDraft('');
@@ -310,8 +306,16 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
               return (
               <article key={message.id} className={`assistantMessage ${message.role}${isTyping ? ' assistantTypingBubble' : ''}`}>
                 <p>
-                  {isTyping ? typedAssistantText || 'Đang trả lời' : message.text}
-                  {isTyping ? <span className="assistantTypingCursor" aria-hidden="true" /> : null}
+                  {isTyping ? (
+                    <span className="assistantTypingStatus">
+                      <span>Đang trả lời</span>
+                      <span className="assistantTypingDots" aria-hidden="true">
+                        <span className="assistantTypingDot" />
+                        <span className="assistantTypingDot" />
+                        <span className="assistantTypingDot" />
+                      </span>
+                    </span>
+                  ) : message.text}
                 </p>
                 {message.actions?.length && !isTyping ? (
                   <div className="assistantActions">

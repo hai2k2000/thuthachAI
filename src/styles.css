@@ -3034,8 +3034,8 @@ td {
 }
 
 .assistantBotPanel {
-  width: min(380px, calc(100vw - 32px));
-  max-height: min(620px, calc(100vh - 112px));
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(700px, calc(100vh - 112px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   overflow: hidden;
@@ -3071,6 +3071,7 @@ td {
 }
 
 .assistantBotHeader .iconButton {
+  background: rgba(255, 255, 255, .14);
   color: #fff;
   border-color: rgba(255, 255, 255, .4);
 }
@@ -3080,7 +3081,7 @@ td {
   align-content: start;
   gap: 10px;
   overflow: auto;
-  padding: 14px;
+  padding: 16px;
   background: var(--surface);
 }
 
@@ -3110,20 +3111,47 @@ td {
   border-color: var(--primary-soft);
 }
 
-.assistantTypingCursor {
-  width: 7px;
-  height: 1.15em;
-  display: inline-block;
-  margin-left: 3px;
-  border-radius: 999px;
-  background: var(--primary);
-  vertical-align: -2px;
-  animation: assistantTypingCursor .78s steps(2, start) infinite;
+.assistantTypingStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 800;
 }
 
-@keyframes assistantTypingCursor {
-  50% {
-    opacity: .18;
+.assistantTypingDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.assistantTypingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  animation: assistantTypingDot .9s ease-in-out infinite;
+}
+
+.assistantTypingDot:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.assistantTypingDot:nth-child(3) {
+  animation-delay: .3s;
+}
+
+@keyframes assistantTypingDot {
+  0%,
+  80%,
+  100% {
+    opacity: .32;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
   }
 }
 
@@ -3136,8 +3164,7 @@ td {
 }
 
 .assistantActions button,
-.assistantRelatedQuestions button,
-.assistantQuickQuestions button {
+.assistantRelatedQuestions button {
   min-height: 34px;
   padding: 7px 10px;
   border: 1px solid var(--primary-soft);
@@ -3172,9 +3199,22 @@ td {
 }
 
 .assistantQuickQuestions {
-  padding: 12px 14px;
+  gap: 6px;
+  padding: 8px 10px;
   border-top: 1px solid var(--border);
   background: #fff;
+}
+
+.assistantQuickQuestions button {
+  min-height: 28px;
+  padding: 5px 8px;
+  border: 1px solid var(--primary-soft);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .assistantInput {

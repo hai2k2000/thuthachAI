@@ -161,9 +161,12 @@ for (const assistantBotHook of ['assistantBot', 'assistantBotPanel', 'Trợ lý 
 const assistantQuickQuestionsBlock = app.match(/const assistantQuickQuestions = \[([\s\S]*?)\];/)?.[1] || '';
 const assistantQuickQuestionCount = (assistantQuickQuestionsBlock.match(/'/g) || []).length / 2;
 assert(assistantQuickQuestionCount === 2, `Assistant bot must expose exactly 2 suggested questions, found ${assistantQuickQuestionCount}`);
-for (const assistantTypingHook of ['typingMessageId', 'assistantTypingBubble', 'assistantTypingCursor']) {
+for (const assistantTypingHook of ['typingMessageId', 'assistantTypingBubble', 'assistantTypingDots', 'assistantTypingDot']) {
   assert(`${app}\n${styles}`.includes(assistantTypingHook), `Missing assistant typing effect hook: ${assistantTypingHook}`);
 }
+assert(styles.includes('width: min(460px'), 'Assistant chat panel must be wider for more comfortable chat space');
+const assistantQuickButtonStyles = styles.match(/\.assistantQuickQuestions button\s*{[^}]*}/)?.[0] || '';
+assert(assistantQuickButtonStyles.includes('min-height: 28px') && assistantQuickButtonStyles.includes('font-size: 12px'), 'Assistant quick suggestion buttons must be compact');
 for (const assistantRelatedHook of ['relatedQuestions', 'assistantRelatedQuestions', 'Câu hỏi liên quan']) {
   assert(`${app}\n${styles}`.includes(assistantRelatedHook), `Missing assistant related question hook: ${assistantRelatedHook}`);
 }
