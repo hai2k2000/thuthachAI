@@ -214,5 +214,9 @@ for (const goLiveHook of [
 ]) {
   assert(server.includes(goLiveHook), `Missing API go-live hardening hook: ${goLiveHook}`);
 }
+assert(app.includes('function apiFetch'), 'Frontend API calls must go through apiFetch');
+assert(app.includes("credentials: init.credentials ?? 'include'"), 'apiFetch must include same-origin proxy cookies');
+assert(!app.includes('await fetch('), 'Frontend must not call fetch directly inside awaited API requests');
+assert(!app.includes('\n    fetch('), 'Frontend must not call fetch directly inside effect API requests');
 
 console.log('Content contract passed');

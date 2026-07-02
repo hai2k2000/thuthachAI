@@ -60,6 +60,13 @@ import {
   submissions,
 } from './data';
 
+function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  return fetch(input, {
+    ...init,
+    credentials: init.credentials ?? 'include',
+  });
+}
+
 export default function App() {
   const [pathname, setPathname] = useState(normalizePath(window.location.pathname));
   const { message, copy } = useCopyToast();
@@ -776,7 +783,7 @@ function HomeLeaderboardPreview({ navigate }: { navigate: (href: string) => void
 
   useEffect(() => {
     let active = true;
-    fetch('/api/public/leaderboard')
+    apiFetch('/api/public/leaderboard')
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load leaderboard')))
       .then((data: { items?: PublicLeaderboardItem[] }) => {
         if (active) setItems(data.items ?? []);
@@ -1001,7 +1008,7 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
     }
 
     try {
-      const response = await fetch('/api/submissions', {
+      const response = await apiFetch('/api/submissions', {
         method: 'POST',
         body: payload,
       });
@@ -1414,7 +1421,7 @@ function PromptsPage({ navigate, onCopy }: { navigate: (href: string) => void; o
 
   useEffect(() => {
     let active = true;
-    fetch('/api/public/prompts')
+    apiFetch('/api/public/prompts')
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load prompts')))
       .then((data: { prompts?: PublicPromptItem[] }) => {
         if (active) setPublicPrompts(data.prompts ?? []);
@@ -1512,7 +1519,7 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
   useEffect(() => {
     let active = true;
     const deviceId = getCommunityDeviceId();
-    fetch(`/api/public/featured?deviceId=${encodeURIComponent(deviceId)}`)
+    apiFetch(`/api/public/featured?deviceId=${encodeURIComponent(deviceId)}`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load featured submissions')))
       .then((data: { submissions?: PublicFeaturedSubmission[] }) => {
         if (active) setPublicSubmissions(data.submissions ?? []);
@@ -1546,7 +1553,7 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
     setVotingId(id);
     setVoteNotice('');
     try {
-      const response = await fetch(`/api/public/submissions/${encodeURIComponent(id)}/vote`, {
+      const response = await apiFetch(`/api/public/submissions/${encodeURIComponent(id)}/vote`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ deviceId, reaction }),
@@ -1689,7 +1696,7 @@ function LeaderboardPage() {
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     let active = true;
-    fetch('/api/public/leaderboard')
+    apiFetch('/api/public/leaderboard')
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load leaderboard')))
       .then((data: { items?: PublicLeaderboardItem[]; departments?: PublicDepartmentScore[] }) => {
         if (!active) return;
@@ -2027,7 +2034,7 @@ function ForumPage({ navigate }: { navigate: (href: string) => void }) {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/forum/threads')
+    apiFetch('/api/forum/threads')
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load forum threads')))
       .then((data: { threads?: ForumThread[] }) => {
         if (active) setForumThreads(data.threads ?? []);
@@ -2069,7 +2076,7 @@ function ForumPage({ navigate }: { navigate: (href: string) => void }) {
     event.preventDefault();
     setStatus({ state: 'submitting' });
     try {
-      const response = await fetch('/api/forum/threads', {
+      const response = await apiFetch('/api/forum/threads', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(threadForm),
@@ -2090,7 +2097,7 @@ function ForumPage({ navigate }: { navigate: (href: string) => void }) {
     const form = replyForms[threadId] || initialForumReplyForm;
     setStatus({ state: 'submitting' });
     try {
-      const response = await fetch(`/api/forum/threads/${encodeURIComponent(threadId)}/replies`, {
+      const response = await apiFetch(`/api/forum/threads/${encodeURIComponent(threadId)}/replies`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(form),
@@ -2221,7 +2228,7 @@ function ContactPage() {
 
     setStatus({ state: 'submitting' });
     try {
-      const response = await fetch('/api/contact', {
+      const response = await apiFetch('/api/contact', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(form),
@@ -2308,7 +2315,7 @@ function AdminPage() {
 
     setStatus({ state: 'submitting' });
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await apiFetch('/api/admin/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(loginForm),
@@ -2351,9 +2358,9 @@ function AdminPage() {
     setStatus({ state: 'submitting' });
     try {
       const [submissionResponse, contactResponse, userResponse] = await Promise.all([
-        fetch('/api/admin/submissions', { headers: { 'x-admin-token': nextToken } }),
-        fetch('/api/admin/contact-messages', { headers: { 'x-admin-token': nextToken } }),
-        fetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } }),
+        apiFetch('/api/admin/submissions', { headers: { 'x-admin-token': nextToken } }),
+        apiFetch('/api/admin/contact-messages', { headers: { 'x-admin-token': nextToken } }),
+        apiFetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } }),
       ]);
       const submissionData = await submissionResponse.json().catch(() => ({} as { submissions?: AdminSubmission[]; errors?: string[] }));
       const contactData = await contactResponse.json().catch(() => ({} as { messages?: ContactMessage[]; errors?: string[] }));
@@ -2376,7 +2383,7 @@ function AdminPage() {
 
   async function updateSubmission(id: string, patch: Partial<AdminSubmission>) {
     try {
-      const response = await fetch(`/api/admin/submissions/${encodeURIComponent(id)}`, {
+      const response = await apiFetch(`/api/admin/submissions/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
@@ -2403,7 +2410,7 @@ function AdminPage() {
     }
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await apiFetch('/api/admin/users', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -2425,7 +2432,7 @@ function AdminPage() {
 
   async function updateAdminUser(id: string, patch: Partial<AdminUser> & { password?: string }) {
     try {
-      const response = await fetch(`/api/admin/users/${encodeURIComponent(id)}`, {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
