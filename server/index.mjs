@@ -37,6 +37,7 @@ import {
   normalizeSubmissionFields,
   validateSubmissionFields,
 } from './submission-utils.mjs';
+import { createRateLimitMiddleware, createRateLimitStore } from './rate-limit.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = path.resolve(process.env.SUBMISSIONS_DATA_DIR || path.join(rootDir, 'storage'));
@@ -54,6 +55,47 @@ const maxSubmissionFiles = Number(process.env.MAX_SUBMISSION_FILES || 3);
 const maxCoverImages = 1;
 const port = Number(process.env.PORT || 4310);
 const host = process.env.HOST || '127.0.0.1';
+const rateLimitStore = createRateLimitStore();
+const adminLoginRateLimit = createConfiguredRateLimit({
+  keyPrefix: 'admin-login',
+  limitEnv: 'RATE_LIMIT_ADMIN_LOGIN_MAX',
+  windowEnv: 'RATE_LIMIT_ADMIN_LOGIN_WINDOW_MS',
+  defaultLimit: 10,
+  defaultWindowMs: 15 * 60 * 1000,
+  message: 'Qua nhieu lan dang nhap. Vui long thu lai sau it phut.',
+});
+const submissionsRateLimit = createConfiguredRateLimit({
+  keyPrefix: 'submissions',
+  limitEnv: 'RATE_LIMIT_SUBMISSIONS_MAX',
+  windowEnv: 'RATE_LIMIT_SUBMISSIONS_WINDOW_MS',
+  defaultLimit: 8,
+  defaultWindowMs: 60 * 60 * 1000,
+  message: 'Ban da gui qua nhieu bai du thi trong thoi gian ngan. Vui long thu lai sau.',
+});
+const contactRateLimit = createConfiguredRateLimit({
+  keyPrefix: 'contact',
+  limitEnv: 'RATE_LIMIT_CONTACT_MAX',
+  windowEnv: 'RATE_LIMIT_CONTACT_WINDOW_MS',
+  defaultLimit: 10,
+  defaultWindowMs: 15 * 60 * 1000,
+  message: 'Ban da gui qua nhieu yeu cau lien he. Vui long thu lai sau it phut.',
+});
+const communityVoteRateLimit = createConfiguredRateLimit({
+  keyPrefix: 'community-vote',
+  limitEnv: 'RATE_LIMIT_COMMUNITY_VOTE_MAX',
+  windowEnv: 'RATE_LIMIT_COMMUNITY_VOTE_WINDOW_MS',
+  defaultLimit: 60,
+  defaultWindowMs: 15 * 60 * 1000,
+  message: 'He thong dang nhan qua nhieu luot binh chon tu thiet bi nay. Vui long thu lai sau.',
+});
+const forumRateLimit = createConfiguredRateLimit({
+  keyPrefix: 'forum',
+  limitEnv: 'RATE_LIMIT_FORUM_MAX',
+  windowEnv: 'RATE_LIMIT_FORUM_WINDOW_MS',
+  defaultLimit: 20,
+  defaultWindowMs: 15 * 60 * 1000,
+  message: 'Ban da gui qua nhieu noi dung len dien dan. Vui long thu lai sau it phut.',
+});
 
 const allowedExtensions = new Set([
   '.csv',
@@ -323,7 +365,7 @@ app.get('/api/submissions/health', (_request, response) => {
   response.json({ ok: true });
 });
 
-app.post('/api/admin/login', (request, response) => {
+app.post('/api/admin/login', adminLoginRateLimit, (request, response) => {
   const username = cleanText(request.body?.username, 60).toLowerCase();
   const user = username ? findAdminUserByUsername.get(username) : null;
   if (user) {
@@ -347,7 +389,7 @@ app.post('/api/admin/login', (request, response) => {
   response.status(result.status).json(result.body);
 });
 
-app.post('/api/submissions', upload.fields([
+app.post('/api/submissions', submissionsRateLimit, upload.fields([
   { name: 'submissionFiles', maxCount: maxSubmissionFiles },
   { name: 'evidenceFiles', maxCount: maxUploadFiles },
   { name: 'coverImage', maxCount: maxCoverImages },
@@ -430,7 +472,7 @@ app.post('/api/submissions', upload.fields([
   }
 });
 
-app.post('/api/contact', (request, response) => {
+app.post('/api/contact', contactRateLimit, (request, response) => {
   const name = cleanText(request.body?.name);
   const department = cleanText(request.body?.department);
   const email = cleanText(request.body?.email);
@@ -462,7 +504,7 @@ app.get('/api/public/featured', (request, response) => {
   response.json({ ok: true, submissions });
 });
 
-app.post('/api/public/submissions/:id/vote', (request, response) => {
+app.post('/api/public/submissions/:id/vote', communityVoteRateLimit, (request, response) => {
   const id = String(request.params.id || '');
   const existing = findSubmissionById.get(id);
   if (!existing) {
@@ -543,7 +585,7 @@ app.get('/api/forum/threads', (_request, response) => {
   response.json({ ok: true, threads: getForumThreads() });
 });
 
-app.post('/api/forum/threads', (request, response) => {
+app.post('/api/forum/threads', forumRateLimit, (request, response) => {
   const validation = normalizeForumThreadInput(request.body);
   if (!validation.ok) {
     response.status(400).json({ ok: false, errors: validation.errors });
@@ -571,7 +613,7 @@ app.post('/api/forum/threads', (request, response) => {
   });
 });
 
-app.post('/api/forum/threads/:id/replies', (request, response) => {
+app.post('/api/forum/threads/:id/replies', forumRateLimit, (request, response) => {
   const threadId = String(request.params.id || '');
   const existing = findForumThreadById.get(threadId);
   if (!existing) {
@@ -916,6 +958,30 @@ function cleanText(value, max = 500) {
 function getRequestIp(request) {
   const forwarded = String(request.get('x-forwarded-for') || '').split(',')[0].trim();
   return forwarded || request.socket?.remoteAddress || request.ip || '';
+}
+
+function createConfiguredRateLimit({
+  keyPrefix,
+  limitEnv,
+  windowEnv,
+  defaultLimit,
+  defaultWindowMs,
+  message,
+}) {
+  return createRateLimitMiddleware({
+    store: rateLimitStore,
+    keyPrefix,
+    limit: positiveEnvNumber(limitEnv, defaultLimit),
+    windowMs: positiveEnvNumber(windowEnv, defaultWindowMs),
+    getKey: getRequestIp,
+    message,
+  });
+}
+
+function positiveEnvNumber(name, fallback) {
+  const value = Number(process.env[name]);
+  if (!Number.isFinite(value) || value <= 0) return fallback;
+  return Math.floor(value);
 }
 
 function mapSubmissionWithCommunity(row, { publicBaseUrl = '', token = '', deviceId = '' } = {}) {

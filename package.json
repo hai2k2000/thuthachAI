@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "lint": "tsc --noEmit",
-    "test": "node scripts/test-content-contract.mjs && node --test scripts/test-submission-utils.mjs scripts/test-admin-auth.mjs scripts/test-admin-users.mjs scripts/test-community-votes.mjs scripts/test-forum-utils.mjs",
+    "test": "node scripts/test-content-contract.mjs && node --test scripts/test-submission-utils.mjs scripts/test-admin-auth.mjs scripts/test-admin-users.mjs scripts/test-community-votes.mjs scripts/test-forum-utils.mjs scripts/test-rate-limit.mjs scripts/test-backup-utils.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

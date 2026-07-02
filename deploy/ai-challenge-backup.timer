@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Thử thách AI backup every night
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+Unit=ai-challenge-backup.service
+
+[Install]
+WantedBy=timers.target

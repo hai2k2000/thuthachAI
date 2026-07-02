@@ -194,4 +194,25 @@ for (const forumHook of ['Diễn đàn AI', 'forumThreads', 'forumThreadForm', '
   assert(`${data}\n${app}\n${components}\n${styles}\n${server}`.includes(forumHook), `Missing AI forum hook/content: ${forumHook}`);
 }
 
+for (const goLiveFile of [
+  'server/rate-limit.mjs',
+  'server/backup-utils.mjs',
+  'scripts/backup-production.mjs',
+  'deploy/ai-challenge-backup.service',
+  'deploy/ai-challenge-backup.timer',
+  'docs/GO_LIVE_CHECKLIST.md',
+]) {
+  assert(fs.existsSync(path.join(root, goLiveFile)), `Missing go-live file: ${goLiveFile}`);
+}
+for (const goLiveHook of [
+  'createRateLimitMiddleware',
+  'RATE_LIMIT_SUBMISSIONS_MAX',
+  'RATE_LIMIT_ADMIN_LOGIN_MAX',
+  'RATE_LIMIT_CONTACT_MAX',
+  'RATE_LIMIT_COMMUNITY_VOTE_MAX',
+  'RATE_LIMIT_FORUM_MAX',
+]) {
+  assert(server.includes(goLiveHook), `Missing API go-live hardening hook: ${goLiveHook}`);
+}
+
 console.log('Content contract passed');
