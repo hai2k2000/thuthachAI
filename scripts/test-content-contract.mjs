@@ -158,6 +158,9 @@ assert(assistantQuickQuestionCount === 2, `Assistant bot must expose exactly 2 s
 for (const assistantTypingHook of ['typingMessageId', 'assistantTypingBubble', 'assistantTypingCursor']) {
   assert(`${app}\n${styles}`.includes(assistantTypingHook), `Missing assistant typing effect hook: ${assistantTypingHook}`);
 }
+for (const assistantRelatedHook of ['relatedQuestions', 'assistantRelatedQuestions', 'Câu hỏi liên quan']) {
+  assert(`${app}\n${styles}`.includes(assistantRelatedHook), `Missing assistant related question hook: ${assistantRelatedHook}`);
+}
 for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài dự thi', 'Nhóm dự thi', 'Ảnh đại diện bài dự thi', 'Bình chọn cộng đồng', 'Liên hệ Ban tổ chức']) {
   assert(app.includes(assistantAnswer), `Assistant bot must answer common question: ${assistantAnswer}`);
 }

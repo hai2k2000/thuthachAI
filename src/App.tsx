@@ -149,6 +149,7 @@ type AssistantMessage = {
   role: 'bot' | 'user';
   text: string;
   actions?: AssistantAction[];
+  relatedQuestions?: string[];
 };
 
 type AssistantAnswer = {
@@ -157,6 +158,7 @@ type AssistantAnswer = {
   keywords: string[];
   answer: string;
   actions?: AssistantAction[];
+  relatedQuestions?: string[];
 };
 
 const assistantQuickQuestions = [
@@ -171,13 +173,15 @@ const assistantAnswers: AssistantAnswer[] = [
     keywords: ['han nop', 'deadline', 'thoi han', 'tuan 1', 'nop bai khi nao'],
     answer: 'Hạn nộp bài tuần 1 là 15:00 ngày 06/07/2026. Anh/chị nên gửi sớm để có thời gian kiểm tra file bài dự thi và file minh chứng.',
     actions: [{ label: 'Nộp bài', href: '/submit' }, { label: 'Xem thể lệ', href: '/rules' }],
+    relatedQuestions: ['Cách nộp bài dự thi', 'Cần chuẩn bị file gì?', 'Tiêu chí chấm điểm thế nào?'],
   },
   {
     id: 'submit',
     title: 'Cách nộp bài dự thi',
-    keywords: ['cach nop', 'nop bai', 'gui bai', 'form', 'upload', 'tai len'],
+    keywords: ['cach nop', 'nop bai', 'gui bai', 'form', 'upload', 'tai len', 'file', 'can chuan bi file'],
     answer: 'Anh/chị vào form nộp bài, điền thông tin cá nhân, chọn nhóm dự thi, nhập nhật ký tác nghiệp, upload file bài dự thi và file minh chứng. Sau khi gửi, hệ thống trả mã tiếp nhận để Ban tổ chức đối chiếu.',
     actions: [{ label: 'Mở form nộp bài', href: '/submit' }],
+    relatedQuestions: ['Nhóm dự thi gồm những nhóm nào?', 'Ảnh đại diện bài dự thi có bắt buộc không?', 'Hạn nộp bài tuần 1'],
   },
   {
     id: 'group',
@@ -185,6 +189,7 @@ const assistantAnswers: AssistantAnswer[] = [
     keywords: ['nhom', 'phong vien', 'bien tap', 'tong hop', 'kinh doanh', 'chon nhom'],
     answer: 'Tuần 1 có 3 nhóm dự thi: Nhóm Phóng viên, Biên tập viên; Nhóm Tổng hợp; Nhóm Kinh doanh. Anh/chị chọn đúng nhóm tương ứng với đề bài của mình trong form nộp bài.',
     actions: [{ label: 'Xem đề bài', href: '/challenges' }, { label: 'Nộp bài', href: '/submit' }],
+    relatedQuestions: ['Cách nộp bài dự thi', 'Tiêu chí chấm điểm thế nào?', 'Diễn đàn AI dùng thế nào?'],
   },
   {
     id: 'cover',
@@ -192,13 +197,15 @@ const assistantAnswers: AssistantAnswer[] = [
     keywords: ['anh dai dien', 'cover', 'thumbnail', 'hinh dai dien', 'tu tao anh'],
     answer: 'Ảnh đại diện bài dự thi là không bắt buộc. Nếu anh/chị không upload ảnh JPG, PNG hoặc WEBP, hệ thống sẽ tự tạo ảnh đại diện từ file bài dự thi đầu tiên.',
     actions: [{ label: 'Nộp bài', href: '/submit' }],
+    relatedQuestions: ['Cần chuẩn bị file gì?', 'Cách nộp bài dự thi', 'Bình chọn cộng đồng hoạt động thế nào?'],
   },
   {
     id: 'vote',
     title: 'Bình chọn cộng đồng',
-    keywords: ['binh chon', 'cong dong', 'danh gia', 'vote', 'nguoi xem'],
+    keywords: ['binh chon', 'cong dong', 'danh gia', 'vote', 'nguoi xem', 'bai tieu bieu'],
     answer: 'Người xem có thể bình chọn cho các bài đã được Ban tổ chức duyệt hiển thị. Mỗi thiết bị chỉ được bình chọn một lần cho mỗi bài dự thi để hạn chế spam.',
     actions: [{ label: 'Xem bài tiêu biểu', href: '/featured' }],
+    relatedQuestions: ['Bài tiêu biểu hiển thị khi nào?', 'Tiêu chí chấm điểm thế nào?', 'Diễn đàn AI dùng thế nào?'],
   },
   {
     id: 'rules',
@@ -206,6 +213,7 @@ const assistantAnswers: AssistantAnswer[] = [
     keywords: ['the le', 'cham diem', 'tieu chi', '100 diem', 'giai thuong'],
     answer: 'Bài dự thi được đánh giá theo thang 100 điểm, gồm mức độ phù hợp đề bài, hiệu quả ứng dụng AI, tính sáng tạo, chất lượng sản phẩm và tinh thần chia sẻ kinh nghiệm.',
     actions: [{ label: 'Xem thể lệ', href: '/rules' }],
+    relatedQuestions: ['Hạn nộp bài tuần 1', 'Nhóm dự thi gồm những nhóm nào?', 'Bình chọn cộng đồng hoạt động thế nào?'],
   },
   {
     id: 'contact',
@@ -213,13 +221,15 @@ const assistantAnswers: AssistantAnswer[] = [
     keywords: ['lien he', 'ho tro', 'ban to chuc', 'vu mai anh', 'gap loi'],
     answer: 'Nếu cần hỗ trợ thêm, anh/chị gửi yêu cầu qua trang Liên hệ. Ban tổ chức sẽ kiểm tra nội dung và phản hồi theo thông tin anh/chị để lại.',
     actions: [{ label: 'Gửi liên hệ', href: '/contact' }],
+    relatedQuestions: ['Cách nộp bài dự thi', 'Diễn đàn AI dùng thế nào?', 'Hạn nộp bài tuần 1'],
   },
   {
     id: 'forum',
     title: 'Diễn đàn AI',
-    keywords: ['dien dan', 'forum', 'trao doi', 'chia se kinh nghiem', 'hoi dap ai'],
+    keywords: ['dien dan', 'forum', 'trao doi', 'chia se kinh nghiem', 'chia se prompt', 'hoi dap ai'],
     answer: 'Diễn đàn AI là nơi mọi người đăng chủ đề, hỏi đáp công cụ, chia sẻ prompt và kinh nghiệm sử dụng AI trong công việc. Anh/chị có thể mở chủ đề mới hoặc phản hồi trực tiếp dưới từng thảo luận.',
     actions: [{ label: 'Mở Diễn đàn AI', href: '/forum' }, { label: 'Xem Kho Prompt', href: '/prompts' }],
+    relatedQuestions: ['Chia sẻ prompt ở đâu?', 'Cách nộp bài dự thi', 'Bình chọn cộng đồng hoạt động thế nào?'],
   },
 ];
 
@@ -228,6 +238,7 @@ const assistantFallback: AssistantMessage = {
   role: 'bot',
   text: 'Mình chưa tìm thấy câu trả lời thật khớp. Anh/chị có thể hỏi về hạn nộp, cách nộp bài, nhóm dự thi, ảnh đại diện, bình chọn cộng đồng hoặc gửi liên hệ cho Ban tổ chức.',
   actions: [{ label: 'Xem thể lệ', href: '/rules' }, { label: 'Liên hệ', href: '/contact' }],
+  relatedQuestions: ['Cách nộp bài dự thi', 'Diễn đàn AI dùng thế nào?', 'Liên hệ Ban tổ chức'],
 };
 
 function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
@@ -252,7 +263,7 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
     if (typingTimer.current) window.clearInterval(typingTimer.current);
     const matched = matchAssistantAnswer(cleanQuestion);
     const response = matched
-      ? { id: `bot-${Date.now()}`, role: 'bot' as const, text: matched.answer, actions: matched.actions }
+      ? { id: `bot-${Date.now()}`, role: 'bot' as const, text: matched.answer, actions: matched.actions, relatedQuestions: matched.relatedQuestions }
       : { ...assistantFallback, id: `bot-${Date.now()}` };
     setMessages((current) => [
       ...current,
@@ -306,6 +317,16 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
                         setOpen(false);
                       }}>
                         {action.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {message.relatedQuestions?.length && !isTyping ? (
+                  <div className="assistantRelatedQuestions" aria-label="Câu hỏi liên quan">
+                    <span>Câu hỏi liên quan</span>
+                    {message.relatedQuestions.map((question) => (
+                      <button key={`${message.id}-${question}`} type="button" onClick={() => askAssistant(question)}>
+                        {question}
                       </button>
                     ))}
                   </div>

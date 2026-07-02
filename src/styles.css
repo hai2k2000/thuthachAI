@@ -2902,6 +2902,7 @@ td {
 }
 
 .assistantActions,
+.assistantRelatedQuestions,
 .assistantQuickQuestions {
   display: flex;
   flex-wrap: wrap;
@@ -2909,6 +2910,7 @@ td {
 }
 
 .assistantActions button,
+.assistantRelatedQuestions button,
 .assistantQuickQuestions button {
   min-height: 34px;
   padding: 7px 10px;
@@ -2918,6 +2920,29 @@ td {
   color: var(--primary);
   font-weight: 900;
   cursor: pointer;
+}
+
+.assistantRelatedQuestions {
+  padding-top: 2px;
+}
+
+.assistantRelatedQuestions > span {
+  width: 100%;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.assistantRelatedQuestions button {
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.assistantRelatedQuestions button:hover {
+  border-color: var(--primary-soft);
+  background: #fff4f4;
+  color: var(--primary);
 }
 
 .assistantQuickQuestions {
