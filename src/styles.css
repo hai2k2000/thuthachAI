@@ -357,9 +357,8 @@ img {
 
 .previewGrid {
   display: grid;
-  grid-template-columns: minmax(320px, 520px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
-  justify-content: center;
 }
 
 .wideFeature {

@@ -125,6 +125,7 @@ function renderRoute(pathname: string, navigate: (href: string) => void, copy: (
 
 function HomePage({ navigate }: { navigate: (href: string) => void }) {
   const openChallenges = challenges.filter((challenge) => challenge.status === 'Đang mở');
+  const showImpactMetrics = false;
   return (
     <PageContainer className="homePage">
       <section className="homeHero">
@@ -182,6 +183,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
         <Timeline items={challengeWeeks} />
       </section>
 
+      {showImpactMetrics ? (
       <section className="insightBand">
         <div>
           <SectionHeading
@@ -201,6 +203,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
           <StatCard value="40%" label="Giảm tải công việc" />
         </div>
       </section>
+      ) : null}
 
       <section className="previewGrid">
         <div className="leaderMini card">
