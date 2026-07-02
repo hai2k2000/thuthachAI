@@ -49,7 +49,6 @@ const navItems = [
   { label: 'Trang chủ', href: '/' },
   { label: 'Thử thách', href: '/challenges' },
   { label: 'Kho Prompt', href: '/prompts' },
-  { label: 'Bài tiêu biểu', href: '/featured' },
   { label: 'Bảng vàng AI', href: '/leaderboard' },
   { label: 'AI Lab', href: '/ai-lab' },
   { label: 'Tin tức AI', href: '/ai-news' },
@@ -64,39 +63,43 @@ export function Header({ pathname, navigate }: { pathname: string; navigate: Nav
   return (
     <header className="siteHeader">
       <div className="headerInner">
-        <AppLink href="/" navigate={navigate} className="brand">
-          <span className="brandLogo">
-            <img src="/assets/thoi-dai-logo.png" alt="Tạp chí Thời Đại - Vietnam Times" />
-          </span>
-          <span className="brandDivider" />
-          <b>Thử thách AI</b>
-        </AppLink>
-        <nav className="desktopNav" aria-label="Điều hướng chính">
-          {navItems.map((item) => (
-            <AppLink
-              key={item.href}
-              href={item.href}
-              navigate={navigate}
-              className={isActivePath(pathname, item.href) ? 'active' : ''}
-            >
-              {item.label}
+        <div className="headerMainRow">
+          <AppLink href="/" navigate={navigate} className="brand">
+            <span className="brandLogo">
+              <img src="/assets/thoi-dai-logo.png" alt="Tạp chí Thời Đại - Vietnam Times" />
+            </span>
+            <span className="brandDivider" />
+            <b>Thử thách AI</b>
+          </AppLink>
+          <div className="headerActionsRow">
+            <AppLink href="/admin" navigate={navigate} className="ghostButton smallButton loginButton">
+              <Icon name="login" />
+              <span>Đăng nhập</span>
             </AppLink>
-          ))}
-        </nav>
-        <div className="headerActions">
-          <AppLink href="/admin" navigate={navigate} className="ghostButton smallButton loginButton">
-            <Icon name="login" />
-            <span>Đăng nhập</span>
-          </AppLink>
-          <AppLink href="/contact" navigate={navigate} className="ghostButton smallButton">
-            Liên hệ
-          </AppLink>
-          <AppLink href="/submit" navigate={navigate} className="primaryButton smallButton">
-            Nộp bài dự thi
-          </AppLink>
-          <button type="button" className="iconButton mobileOnly" aria-label="Mở menu" onClick={() => setOpen(true)}>
-            <Icon name="menu" />
-          </button>
+            <AppLink href="/contact" navigate={navigate} className="ghostButton smallButton">
+              Liên hệ
+            </AppLink>
+            <AppLink href="/submit" navigate={navigate} className="primaryButton smallButton">
+              Nộp bài dự thi
+            </AppLink>
+            <button type="button" className="iconButton mobileOnly" aria-label="Mở menu" onClick={() => setOpen(true)}>
+              <Icon name="menu" />
+            </button>
+          </div>
+        </div>
+        <div className="headerNavRow">
+          <nav className="desktopNav" aria-label="Điều hướng chính">
+            {navItems.map((item) => (
+              <AppLink
+                key={item.href}
+                href={item.href}
+                navigate={navigate}
+                className={isActivePath(pathname, item.href) ? 'active' : ''}
+              >
+                {item.label}
+              </AppLink>
+            ))}
+          </nav>
         </div>
       </div>
       {open ? <MobileMenu pathname={pathname} navigate={navigate} onClose={() => setOpen(false)} /> : null}

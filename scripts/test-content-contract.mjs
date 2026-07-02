@@ -109,7 +109,12 @@ for (const coverImageHook of ['coverImage', 'Ảnh đại diện bài dự thi',
 
 const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
 assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
-assert(styles.includes('.headerActions .ghostButton'), 'Header must compact secondary actions on medium screens');
+const navItemsBlock = components.match(/const navItems = \[([\s\S]*?)\];/)?.[1] || '';
+assert(!navItemsBlock.includes('Bài tiêu biểu'), 'Desktop nav must hide the featured submissions menu item');
+for (const headerRowHook of ['headerMainRow', 'headerNavRow', 'headerActionsRow']) {
+  assert(`${components}\n${styles}`.includes(headerRowHook), `Header must separate utility actions into their own row: ${headerRowHook}`);
+}
+assert(styles.includes('.headerActionsRow .smallButton'), 'Header utility actions must stay compact in their own row');
 
 for (const countdownLayout of ['countdownGrid', 'countdownUnit', 'countdownValue', 'countdownLabel']) {
   assert(app.includes(countdownLayout), `Missing countdown layout hook: ${countdownLayout}`);

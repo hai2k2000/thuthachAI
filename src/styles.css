@@ -73,13 +73,27 @@ img {
 
 .headerInner {
   width: min(100%, var(--max));
-  min-height: 80px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 10px 20px 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.headerMainRow,
+.headerNavRow {
   display: flex;
   align-items: center;
+  min-width: 0;
+}
+
+.headerMainRow {
   justify-content: space-between;
   gap: 16px;
+}
+
+.headerNavRow {
+  justify-content: center;
+  border-top: 1px solid rgba(216, 219, 226, .72);
 }
 
 .brand {
@@ -119,10 +133,8 @@ img {
 .desktopNav {
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
   justify-content: center;
-  gap: clamp(8px, 1vw, 14px);
-  margin-left: auto;
+  gap: clamp(12px, 2vw, 24px);
   min-width: 0;
 }
 
@@ -135,7 +147,7 @@ img {
 }
 
 .desktopNav a {
-  min-height: 40px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   border-bottom: 2px solid transparent;
@@ -149,15 +161,18 @@ img {
   border-bottom-color: var(--primary);
 }
 
-.headerActions {
+.headerActionsRow {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: 8px;
+  gap: 7px;
 }
 
-.headerActions .smallButton {
-  padding-inline: 12px;
+.headerActionsRow .smallButton {
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -3280,8 +3295,12 @@ td {
 
 @media (max-width: 1120px) {
   .desktopNav,
-  .headerActions .ghostButton {
+  .headerNavRow {
     display: none;
+  }
+
+  .headerInner {
+    padding-block: 8px;
   }
 
   .mobileOnly {
@@ -3380,7 +3399,8 @@ td {
     min-width: 118px;
   }
 
-  .headerActions .primaryButton {
+  .headerActionsRow .ghostButton,
+  .headerActionsRow .primaryButton {
     display: none;
   }
 
