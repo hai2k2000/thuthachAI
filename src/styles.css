@@ -516,6 +516,25 @@ img {
   padding: 20px;
 }
 
+.challengeGroupBadge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--primary-soft);
+  border-radius: 999px;
+  background: #fff4f4;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.challengeGroupBadge span {
+  overflow-wrap: anywhere;
+}
+
 .communityVoteBox {
   display: grid;
   gap: 12px;

@@ -143,7 +143,7 @@ export const challenges: Challenge[] = [
     shortTitle: 'Báo chí hiện đại',
     deadline: '15h ngày 06/7/2026',
     status: 'Đang mở',
-    targetGroup: 'Nhóm Phóng viên, biên tập viên',
+    targetGroup: 'Nhóm Phóng viên, Biên tập viên',
     description:
       'Tìm hiểu các thể loại báo chí hiện đại đang được áp dụng tại các cơ quan báo chí trong khu vực ASEAN và các cơ quan báo chí có điều kiện phát triển tương đồng với Việt Nam; từ đó đối chiếu với sản phẩm hiện có của Tạp chí Thời đại và dùng AI đề xuất phương án hoàn thiện, phát triển.',
     requirements: [

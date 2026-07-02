@@ -295,6 +295,10 @@ export function ChallengeCard({ challenge, navigate }: { challenge: Challenge; n
     <Card className="challengeCard">
       <img src={challenge.image} alt={challenge.title} loading="lazy" />
       <div className="cardBody">
+        <div className="challengeGroupBadge">
+          <Icon name="groups" />
+          <span>{challenge.targetGroup}</span>
+        </div>
         <div className="cardMeta">
           <Badge tone={challenge.status === 'Đang mở' ? 'red' : 'soft'}>{challenge.status}</Badge>
           <span>+{challenge.score} pts</span>
