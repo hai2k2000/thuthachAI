@@ -11,5 +11,6 @@
 - `/featured/:id`
 - `/leaderboard`
 - `/ai-lab`
+- `/ai-news`
 - `/contact`
 - `/search`

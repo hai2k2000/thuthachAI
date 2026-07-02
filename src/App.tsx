@@ -37,6 +37,7 @@ import {
   useCopyToast,
 } from './components';
 import {
+  aiNewsItems,
   aiTools,
   badges,
   challengeWeeks,
@@ -123,6 +124,8 @@ function renderRoute(pathname: string, navigate: (href: string) => void, copy: (
       return <LeaderboardPage />;
     case '/ai-lab':
       return <AiLabPage />;
+    case '/ai-news':
+      return <AiNewsPage navigate={navigate} />;
     case '/contact':
       return <ContactPage />;
     case '/admin':
@@ -1684,6 +1687,123 @@ function AiLabPage() {
   );
 }
 
+function AiNewsPage({ navigate }: { navigate: (href: string) => void }) {
+  const [activeCategory, setActiveCategory] = useState('Tất cả');
+  const featured = aiNewsItems[0];
+  const categories = useMemo(() => ['Tất cả', ...Array.from(new Set(aiNewsItems.map((item) => item.category)))], []);
+  const visibleNews = useMemo(() => {
+    if (activeCategory === 'Tất cả') {
+      return aiNewsItems.filter((item) => item.id !== featured.id);
+    }
+    return aiNewsItems.filter((item) => item.category === activeCategory);
+  }, [activeCategory, featured.id]);
+
+  const resourceLinks = [
+    { icon: 'upload_file', title: 'Nộp bài dự thi', description: 'Gửi bài, nhật ký prompt và file minh chứng trực tiếp lên VPS.', href: '/submit' },
+    { icon: 'science', title: 'AI Lab', description: 'Xem công cụ và hướng dẫn dùng AI an toàn trong công việc.', href: '/ai-lab' },
+    { icon: 'terminal', title: 'Kho Prompt', description: 'Tái sử dụng các prompt đã được kiểm chứng trong cuộc thi.', href: '/prompts' },
+  ];
+
+  return (
+    <PageContainer className="aiNewsPage">
+      <Breadcrumb items={[{ label: 'Trang chủ', href: '/' }, { label: 'Tin tức AI' }]} navigate={navigate} />
+
+      <section className="aiNewsHero">
+        <div>
+          <SectionHeading
+            eyebrow="Tin tức AI"
+            title="Cập nhật AI cho tòa soạn và cuộc thi"
+            description="Theo dõi cách dùng AI trong nghiệp vụ báo chí, cập nhật công cụ mới và các gợi ý giúp bài dự thi rõ quy trình, rõ tác động."
+          />
+          <div className="aiNewsTopics" aria-label="Lọc tin tức AI theo chủ đề">
+            {categories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                className={category === activeCategory ? 'active' : ''}
+                aria-pressed={category === activeCategory}
+                onClick={() => setActiveCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+        <aside className="aiNewsHeroStats">
+          <span>{aiNewsItems.length}</span>
+          <strong>bản tin</strong>
+          <p>Ưu tiên nội dung có thể áp dụng ngay cho bài dự thi và công việc hằng ngày.</p>
+        </aside>
+      </section>
+
+      <section className="aiNewsFeatured">
+        <img src={featured.image} alt={featured.title} />
+        <div className="aiNewsFeaturedBody">
+          <Badge tone="red">{featured.category}</Badge>
+          <h2>{featured.title}</h2>
+          <p>{featured.summary}</p>
+          <div className="aiNewsMeta">
+            <span><Icon name="calendar_month" /> {featured.date}</span>
+            <span><Icon name="schedule" /> {featured.readTime}</span>
+          </div>
+          <ul>
+            {featured.content.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <div className="aiNewsActions">
+            <AppLink href="/submit" navigate={navigate} className="primaryButton">Nộp bài ứng dụng AI</AppLink>
+            <AppLink href="/ai-lab" navigate={navigate} className="ghostButton">Xem AI Lab</AppLink>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <SectionHeading
+          title={activeCategory === 'Tất cả' ? 'Bản tin mới nhất' : activeCategory}
+          description="Các ghi chú ngắn, dễ áp dụng cho từng nhóm dự thi và các phòng/ban."
+          action={<ResultsCount count={visibleNews.length} label="tin" />}
+        />
+        <div className="aiNewsGrid">
+          {visibleNews.map((item) => (
+            <article key={item.id} className="card aiNewsCard">
+              <img src={item.image} alt={item.title} loading="lazy" />
+              <div>
+                <Badge tone="soft">{item.category}</Badge>
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+                <div className="aiNewsMeta">
+                  <span><Icon name="calendar_month" /> {item.date}</span>
+                  <span><Icon name="schedule" /> {item.readTime}</span>
+                </div>
+                <div className="tagList">
+                  {item.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+          {!visibleNews.length ? <EmptyState title="Chưa có tin trong chủ đề này" description="Hãy chọn chủ đề khác để xem thêm bản tin AI." /> : null}
+        </div>
+      </section>
+
+      <section className="aiNewsResourcePanel">
+        <SectionHeading title="Lối tắt cho người dự thi" description="Từ bản tin, chuyển nhanh sang các khu vực cần dùng nhiều nhất trong cuộc thi." />
+        <div className="cardGrid three">
+          {resourceLinks.map((item) => (
+            <AppLink key={item.href} href={item.href} navigate={navigate} className="aiNewsResourceLink">
+              <Icon name={item.icon} />
+              <strong>{item.title}</strong>
+              <span>{item.description}</span>
+            </AppLink>
+          ))}
+        </div>
+      </section>
+    </PageContainer>
+  );
+}
+
 function ContactPage() {
   const [form, setForm] = useState({ name: '', department: '', email: '', message: '', attachment: '' });
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
@@ -2293,6 +2413,7 @@ function SearchPage({ navigate }: { navigate: (href: string) => void }) {
     const keyword = query.trim().toLowerCase();
     const items = [
       ...challenges.map((challenge) => ({ title: challenge.title, type: 'Thử thách', description: challenge.description, tags: [challenge.targetGroup, `Tuần ${challenge.week}`], href: `/challenges/${challenge.id}` })),
+      ...aiNewsItems.map((item) => ({ title: item.title, type: 'Tin tức AI', description: item.summary, tags: [item.category, ...item.tags], href: '/ai-news' })),
       { title: 'Thể lệ cuộc thi', type: 'Thể lệ', description: 'Tiêu chí chấm điểm, giải thưởng, thời gian và tổ chức thực hiện.', tags: ['100 điểm', 'giải thưởng'], href: '/rules' },
       { title: 'Thông báo mở tuần 1', type: 'Tin cập nhật', description: 'Tuần 1 nhận bài đến 15h00 ngày 06/7/2026.', tags: ['deadline', 'tuần 1'], href: '/challenges' },
       { title: 'Nộp bài dự thi', type: 'Form', description: 'Gửi nội dung bài dự thi, nhật ký tác nghiệp và upload file trực tiếp.', tags: ['nộp bài', 'upload'], href: '/submit' },

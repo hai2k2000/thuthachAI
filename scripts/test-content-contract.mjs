@@ -19,6 +19,7 @@ const requiredRoutes = [
   '/featured',
   '/leaderboard',
   '/ai-lab',
+  '/ai-news',
   '/contact',
   '/admin',
   '/search',
@@ -152,6 +153,10 @@ for (const assistantBotHook of ['assistantBot', 'assistantBotPanel', 'Trợ lý 
 }
 for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài dự thi', 'Nhóm dự thi', 'Ảnh đại diện bài dự thi', 'Bình chọn cộng đồng', 'Liên hệ Ban tổ chức']) {
   assert(app.includes(assistantAnswer), `Assistant bot must answer common question: ${assistantAnswer}`);
+}
+
+for (const aiNewsHook of ['aiNewsItems', 'Tin tức AI', 'AI trong tòa soạn', 'Cập nhật công cụ AI', 'Góc ứng dụng cuộc thi', 'aiNewsHero', 'aiNewsGrid']) {
+  assert(`${data}\n${app}\n${components}\n${styles}`.includes(aiNewsHook), `Missing AI news hook/content: ${aiNewsHook}`);
 }
 
 console.log('Content contract passed');

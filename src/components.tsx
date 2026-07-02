@@ -52,6 +52,7 @@ const navItems = [
   { label: 'Bài tiêu biểu', href: '/featured' },
   { label: 'Bảng vàng AI', href: '/leaderboard' },
   { label: 'AI Lab', href: '/ai-lab' },
+  { label: 'Tin tức AI', href: '/ai-news' },
 ];
 
 export function Header({ pathname, navigate }: { pathname: string; navigate: Navigate }) {

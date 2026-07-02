@@ -85,6 +85,18 @@ export type DepartmentScore = {
   featuredSubmission: string;
 };
 
+export type AINewsItem = {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  date: string;
+  readTime: string;
+  image: string;
+  tags: string[];
+  content: string[];
+};
+
 export type AITool = {
   name: string;
   purpose: string;
@@ -122,6 +134,7 @@ export const routeMap = [
   '/featured',
   '/leaderboard',
   '/ai-lab',
+  '/ai-news',
   '/contact',
   '/admin',
   '/search',
@@ -133,6 +146,84 @@ export const challengeWeeks = [
   { week: 3, title: 'Chủ đề tuần 3', description: 'Nội dung sẽ được Ban Tổ chức công bố sau.', status: 'Sắp diễn ra' },
   { week: 4, title: 'Chủ đề tuần 4', description: 'Nội dung sẽ được Ban Tổ chức công bố sau.', status: 'Sắp diễn ra' },
   { week: 5, title: 'Tuần đặc biệt', description: 'Một đề chung cho toàn cơ quan, không chia nhóm nhiệm vụ.', status: 'Sắp diễn ra' },
+];
+
+export const aiNewsItems: AINewsItem[] = [
+  {
+    id: 'ai-newsroom-workflow',
+    title: 'AI trong tòa soạn: từ gợi ý đề tài đến bản nháp có kiểm chứng',
+    category: 'AI trong tòa soạn',
+    summary:
+      'Gợi ý quy trình dùng AI để tìm góc tiếp cận, lập dàn ý, tóm tắt tài liệu và giữ bước kiểm chứng của phóng viên, biên tập viên.',
+    date: '02/7/2026',
+    readTime: '4 phút đọc',
+    image: heroImage,
+    tags: ['tòa soạn', 'kiểm chứng', 'quy trình'],
+    content: [
+      'AI phù hợp nhất khi đóng vai trò trợ lý chuẩn bị: gom ý, đề xuất câu hỏi phỏng vấn, dựng cấu trúc bài và tóm tắt tài liệu nền.',
+      'Mỗi đầu ra cần được đối chiếu với nguồn chính thức, ghi lại prompt đã dùng và nêu rõ phần nào do con người quyết định.',
+    ],
+  },
+  {
+    id: 'tool-update-week-1',
+    title: 'Cập nhật công cụ AI đáng thử trong tuần 1',
+    category: 'Cập nhật công cụ AI',
+    summary:
+      'Danh sách công cụ hỗ trợ nghiên cứu, biên tập, thiết kế nhanh và trình bày ý tưởng để các nhóm chọn đúng công cụ cho bài dự thi.',
+    date: '02/7/2026',
+    readTime: '3 phút đọc',
+    image: archiveImage,
+    tags: ['ChatGPT', 'Gemini', 'Canva', 'Gamma'],
+    content: [
+      'Nhóm phóng viên có thể ưu tiên công cụ nghiên cứu và tóm tắt nguồn; nhóm tổng hợp nên thử luồng phân loại văn bản; nhóm kinh doanh nên kết hợp công cụ trình bày proposal.',
+      'Không đưa dữ liệu mật, tài liệu nội bộ nhạy cảm hoặc thông tin chưa được phép công bố vào công cụ AI công khai.',
+    ],
+  },
+  {
+    id: 'contest-application-corner',
+    title: 'Góc ứng dụng cuộc thi: cách biến prompt thành bài dự thi rõ điểm',
+    category: 'Góc ứng dụng cuộc thi',
+    summary:
+      'Một bài dự thi mạnh nên chỉ ra vấn đề ban đầu, prompt đã dùng, kết quả trước và sau AI, cùng khả năng áp dụng lại trong phòng ban.',
+    date: '01/7/2026',
+    readTime: '5 phút đọc',
+    image: mediaImage,
+    tags: ['bài dự thi', 'prompt', 'nhân rộng'],
+    content: [
+      'Ban Giám khảo cần nhìn thấy tác động thực tế: tiết kiệm thời gian, giảm lỗi, tăng chất lượng nội dung hoặc mở ra sản phẩm truyền thông mới.',
+      'Nhật ký tác nghiệp nên ghi theo từng bước để người khác có thể học lại quy trình, không chỉ xem sản phẩm cuối.',
+    ],
+  },
+  {
+    id: 'safe-ai-checklist',
+    title: 'Checklist dùng AI an toàn cho tài liệu và dữ liệu nội bộ',
+    category: 'AI trong tòa soạn',
+    summary:
+      'Các nguyên tắc nhanh trước khi đưa dữ liệu vào AI: phân loại mức độ nhạy cảm, ẩn thông tin cá nhân và kiểm tra quyền chia sẻ.',
+    date: '30/6/2026',
+    readTime: '4 phút đọc',
+    image: archiveImage,
+    tags: ['an toàn dữ liệu', 'lưu trữ', 'quyền truy cập'],
+    content: [
+      'Với dữ liệu nội bộ, hãy tách phần có thể chia sẻ và phần cần giữ kín trước khi hỏi AI. Ưu tiên mô tả ngữ cảnh thay vì dán nguyên văn tài liệu nhạy cảm.',
+      'Kết quả AI chỉ là bản tham khảo. Người phụ trách vẫn phải kiểm tra tính đúng, đủ và phù hợp với quy định cơ quan.',
+    ],
+  },
+  {
+    id: 'prompt-review-method',
+    title: 'Cách rà soát prompt trước khi đưa vào Kho Prompt',
+    category: 'Cập nhật công cụ AI',
+    summary:
+      'Một prompt tốt cần có vai trò, bối cảnh, dữ liệu đầu vào, định dạng đầu ra và tiêu chí tự kiểm tra để người khác dùng lại ổn định.',
+    date: '29/6/2026',
+    readTime: '3 phút đọc',
+    image: newsroomImage,
+    tags: ['Kho Prompt', 'chuẩn hóa', 'chia sẻ'],
+    content: [
+      'Trước khi công khai prompt, hãy thử với ít nhất hai trường hợp khác nhau để xem đầu ra có nhất quán không.',
+      'Nên bổ sung cảnh báo về nguồn dữ liệu, giới hạn sử dụng và bước kiểm chứng để tránh hiểu nhầm AI là kết quả cuối cùng.',
+    ],
+  },
 ];
 
 export const challenges: Challenge[] = [
