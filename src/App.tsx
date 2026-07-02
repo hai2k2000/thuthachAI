@@ -75,6 +75,16 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const isAdminRoute = pathname === '/admin';
+  if (isAdminRoute) {
+    return (
+      <>
+        {renderRoute(pathname, navigate, copy)}
+        <Toast message={message} />
+      </>
+    );
+  }
+
   return (
     <>
       <Header pathname={pathname} navigate={navigate} />
@@ -1644,12 +1654,34 @@ function AdminPage() {
   const communityVoteTotal = submissions.reduce((total, submission) => total + (submission.communityVoteCount || 0), 0);
 
   return (
-    <PageContainer>
-      <SectionHeading
-        eyebrow="Quản trị"
-        title="Dashboard Ban tổ chức"
-        description="Tổng hợp bài dự thi, chấm điểm, duyệt prompt, duyệt bài tiêu biểu và xem yêu cầu hỗ trợ gửi từ website."
-      />
+    <main className="adminApp">
+      <aside className="adminSidebar">
+        <a className="adminSidebarBrand" href="/">
+          <img src="/assets/thoi-dai-logo.png" alt="Tạp chí Thời đại" />
+          <span>Thử thách AI</span>
+          <strong>Quản trị</strong>
+        </a>
+        <nav className="adminModuleNav" aria-label="Điều hướng quản trị">
+          <a href="#admin-overview"><Icon name="dashboard" /> Tổng quan</a>
+          <a href="#admin-submissions"><Icon name="folder_open" /> Quản lý bài dự thi</a>
+          <a href="#admin-scoring"><Icon name="grading" /> Chấm điểm bài thi</a>
+          <a href="#admin-users"><Icon name="manage_accounts" /> Quản trị user</a>
+          <a href="#admin-support"><Icon name="support_agent" /> Yêu cầu hỗ trợ</a>
+        </nav>
+        <div className="adminSidebarFooter">
+          <a href="/">Về trang frontend</a>
+          <span>{adminUser ? `Đang đăng nhập: ${adminUser}` : 'Chưa đăng nhập'}</span>
+        </div>
+      </aside>
+      <section className="adminMain">
+        <div className="adminMainInner">
+          <section className="adminPageHeader">
+            <SectionHeading
+              eyebrow="Quản trị"
+              title="Dashboard Ban tổ chức"
+              description="Tổng hợp bài dự thi, chấm điểm, duyệt prompt, duyệt bài tiêu biểu và xem yêu cầu hỗ trợ gửi từ website."
+            />
+          </section>
       {!token ? (
         <form className="adminLoginPanel card" onSubmit={handleAdminLogin}>
           <Icon name="admin_panel_settings" />
@@ -1695,7 +1727,7 @@ function AdminPage() {
 
       {!token ? null : (
         <>
-      <section className="adminOverviewGrid">
+      <section className="adminOverviewGrid" id="admin-overview">
         <StatCard value={String(submissions.length)} label="Bài dự thi" />
         <StatCard value={String(pendingScoringCount)} label="Chờ chấm" />
         <StatCard value={String(scoredCount)} label="Đã chấm" accent />
@@ -1924,7 +1956,9 @@ function AdminPage() {
       </section>
         </>
       )}
-    </PageContainer>
+        </div>
+      </section>
+    </main>
   );
 }
 

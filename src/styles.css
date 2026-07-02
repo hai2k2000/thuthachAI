@@ -1921,6 +1921,98 @@ td {
   gap: 14px;
 }
 
+.adminApp {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  background: var(--surface);
+}
+
+.adminSidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 18px;
+  border-right: 1px solid var(--border);
+  background: #fff;
+  overflow-y: auto;
+}
+
+.adminSidebarBrand {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.adminSidebarBrand img {
+  width: 132px;
+  height: auto;
+}
+
+.adminSidebarBrand span {
+  color: var(--primary);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.adminSidebarBrand strong {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.adminSidebar .adminModuleNav {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.adminSidebar .adminModuleNav a {
+  min-height: 44px;
+  justify-content: flex-start;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  white-space: normal;
+}
+
+.adminSidebar .adminModuleNav a:hover {
+  background: #fff4f4;
+}
+
+.adminSidebarFooter {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.adminSidebarFooter a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.adminMain {
+  min-width: 0;
+}
+
+.adminMainInner {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 34px 28px 60px;
+}
+
+.adminPageHeader {
+  margin-bottom: 20px;
+}
+
 .adminLoginPanel {
   display: grid;
   gap: 14px;
@@ -2318,6 +2410,31 @@ td {
 
   .timeline {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .adminApp {
+    grid-template-columns: 1fr;
+  }
+
+  .adminSidebar {
+    position: relative;
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .adminSidebar .adminModuleNav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adminSidebarFooter {
+    margin-top: 0;
+  }
+
+  .adminMainInner {
+    padding: 24px 16px 48px;
   }
 }
 

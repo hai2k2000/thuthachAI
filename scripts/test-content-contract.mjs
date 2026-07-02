@@ -115,6 +115,10 @@ for (const adminDashboardHook of ['adminOverviewGrid', 'adminModuleNav', 'adminS
   assert(`${app}\n${styles}\n${server}`.includes(adminDashboardHook), `Missing admin dashboard hook: ${adminDashboardHook}`);
 }
 
+for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain']) {
+  assert(`${app}\n${styles}`.includes(adminLayoutHook), `Missing standalone admin layout hook: ${adminLayoutHook}`);
+}
+
 for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiChallengeCommunityDeviceId', '/api/public/submissions/:id/vote', 'community_votes']) {
   assert(`${app}\n${styles}\n${server}`.includes(communityVoteHook), `Missing community vote hook: ${communityVoteHook}`);
 }
