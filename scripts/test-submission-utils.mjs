@@ -28,6 +28,7 @@ test('normalizes and validates required submission fields', () => {
   assert.deepEqual(result.errors, [
     'Ho ten la bat buoc.',
     'Thong tin lien he la bat buoc.',
+    'Nhom du thi la bat buoc.',
     'Ten bai du thi la bat buoc.',
     'Can tai len it nhat mot file bai du thi.',
     'Can tai len it nhat mot file minh chung.',
@@ -40,6 +41,7 @@ test('accepts a complete submission with at least one uploaded evidence file', (
     department: 'Ban Bien tap',
     contact: 'nguyenvana@example.com',
     week: '2',
+    challengeGroup: 'Nhóm Tổng hợp',
     title: 'Tro ly tom tat phan hoi doc gia',
     aiTools: 'ChatGPT, Gemini',
     problem: 'Noi dung bai du thi',
@@ -55,6 +57,28 @@ test('accepts a complete submission with at least one uploaded evidence file', (
 
   assert.equal(result.ok, true);
   assert.deepEqual(result.errors, []);
+});
+
+test('requires a challenge group for each submission', () => {
+  const fields = normalizeSubmissionFields({
+    participantName: 'Nguyen Van A',
+    department: 'Ban Bien tap',
+    contact: 'nguyenvana@example.com',
+    week: '1',
+    challengeGroup: '',
+    title: 'Tro ly tom tat phan hoi doc gia',
+    aiTools: 'ChatGPT',
+    problem: 'Noi dung bai du thi',
+    processSummary: 'Lap prompt, chay thu, doi chieu ket qua.',
+  });
+
+  const result = validateSubmissionFields(fields, {
+    submissionFiles: [{ originalname: 'bai-du-thi.docx', size: 1024 }],
+    evidenceFiles: [{ originalname: 'minh-chung.pdf', size: 1024 }],
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('Nhom du thi la bat buoc.'));
 });
 
 test('creates readable submission ids with date prefix', () => {
@@ -73,7 +97,7 @@ test('formats submissions as csv with quoted values and file links', () => {
       contact: 'nguyenvana@example.com',
       email: '',
       week: '2',
-      challengeGroup: 'Nhóm Phóng viên, biên tập viên',
+      challengeGroup: 'Nhóm Phóng viên, Biên tập viên',
       title: 'Tro ly tom tat, phan loai',
       aiTools: 'ChatGPT',
       problem: 'Nhieu phan hoi can tong hop',

@@ -525,7 +525,7 @@ const initialSubmissionForm: SubmissionFormState = {
   contact: '',
   email: '',
   week: '1',
-  challengeGroup: 'Nhóm Phóng viên, biên tập viên',
+  challengeGroup: '',
   title: '',
   aiTools: '',
   problem: '',
@@ -548,16 +548,16 @@ const departmentOptions = [
 ];
 
 const challengeGroupOptions = [
-  'Nhóm Phóng viên, biên tập viên',
+  'Nhóm Phóng viên, Biên tập viên',
   'Nhóm Tổng hợp',
   'Nhóm Kinh doanh',
-  'Nhóm nhiệm vụ khác',
 ];
 
 const requiredSubmissionFields: Array<[keyof SubmissionFormState, string]> = [
   ['participantName', 'Vui lòng nhập họ tên.'],
   ['department', 'Vui lòng chọn đơn vị.'],
   ['contact', 'Vui lòng nhập email hoặc số điện thoại.'],
+  ['challengeGroup', 'Vui lòng chọn nhóm dự thi.'],
   ['title', 'Vui lòng nhập tên bài dự thi.'],
   ['problem', 'Vui lòng nhập nội dung bài dự thi.'],
   ['aiTools', 'Vui lòng nhập các công cụ AI đã dùng.'],
@@ -727,12 +727,14 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
               </select>
             </label>
             <label className="formField">
-              <span>Nhóm nhiệm vụ</span>
+              <span>Nhóm dự thi <b>*</b></span>
               <select name="challengeGroup" value={form.challengeGroup} onChange={(event) => updateField('challengeGroup', event.target.value)}>
+                <option value="">Chọn nhóm dự thi</option>
                 {challengeGroupOptions.map((group) => (
                   <option key={group}>{group}</option>
                 ))}
               </select>
+              <small>Chọn đúng nhóm tương ứng với đề bài tuần 1.</small>
             </label>
             <label className="formField full">
               <span>Tên bài dự thi <b>*</b></span>
@@ -1759,7 +1761,7 @@ function AdminPage() {
                     ['Đơn vị', submission.department],
                     ['Liên hệ', submission.contact],
                     ['Tuần', `Tuần ${submission.week}`],
-                    ['Nhóm nhiệm vụ', submission.challengeGroup],
+                    ['Nhóm dự thi', submission.challengeGroup],
                     ['Công cụ AI', submission.aiTools],
                     ['Bình chọn cộng đồng', `${submission.communityVoteCount || 0} lượt`],
                   ]}

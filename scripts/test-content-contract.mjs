@@ -88,6 +88,11 @@ for (const challengeCardHook of ['challengeGroupBadge', 'targetGroup']) {
   assert(`${app}\n${components}\n${styles}`.includes(challengeCardHook), `Missing challenge card group hook: ${challengeCardHook}`);
 }
 
+for (const submissionGroupOption of ['Nhóm Phóng viên, Biên tập viên', 'Nhóm Tổng hợp', 'Nhóm Kinh doanh', 'Nhóm dự thi']) {
+  assert(app.includes(submissionGroupOption), `Missing submission group option: ${submissionGroupOption}`);
+}
+assert(!app.includes('Nhóm nhiệm vụ khác'), 'Submission form must only expose the three official groups');
+
 const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
 assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
 assert(styles.includes('.headerActions .ghostButton'), 'Header must compact secondary actions on medium screens');

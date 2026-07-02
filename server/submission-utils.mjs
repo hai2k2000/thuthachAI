@@ -23,6 +23,7 @@ const requiredFields = [
   ['department', 'Don vi la bat buoc.'],
   ['contact', 'Thong tin lien he la bat buoc.'],
   ['week', 'Tuan thu thach la bat buoc.'],
+  ['challengeGroup', 'Nhom du thi la bat buoc.'],
   ['title', 'Ten bai du thi la bat buoc.'],
   ['aiTools', 'Cong cu AI da dung la bat buoc.'],
   ['problem', 'Noi dung bai du thi la bat buoc.'],
