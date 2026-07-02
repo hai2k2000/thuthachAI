@@ -111,6 +111,8 @@ const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
 assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
 const navItemsBlock = components.match(/const navItems = \[([\s\S]*?)\];/)?.[1] || '';
 assert(!navItemsBlock.includes('Bài tiêu biểu'), 'Desktop nav must hide the featured submissions menu item');
+assert(!navItemsBlock.includes("href: '/ai-news'"), 'Header menu must hide AI news');
+assert(!navItemsBlock.includes("href: '/forum'"), 'Header menu must hide AI forum');
 for (const headerRowHook of ['headerMainRow', 'headerNavRow', 'headerActionsRow']) {
   assert(`${components}\n${styles}`.includes(headerRowHook), `Header must separate utility actions into their own row: ${headerRowHook}`);
 }
