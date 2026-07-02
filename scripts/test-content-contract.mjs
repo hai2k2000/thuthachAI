@@ -6,6 +6,7 @@ const data = fs.readFileSync(path.join(root, 'src/data.ts'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 const components = fs.readFileSync(path.join(root, 'src/components.tsx'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'src/styles.css'), 'utf8');
+const server = fs.readFileSync(path.join(root, 'server/index.mjs'), 'utf8');
 const harnessDir = path.join(root, 'harness');
 
 const requiredRoutes = [
@@ -100,6 +101,10 @@ assert(countdownValueStyles.includes('color: var(--primary);'), 'Countdown value
 
 for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', '/api/admin/login', 'aiChallengeAdminUser']) {
   assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);
+}
+
+for (const adminDashboardHook of ['adminOverviewGrid', 'adminModuleNav', 'adminScorePanel', 'adminUserPanel', 'adminUserForm', '/api/admin/users']) {
+  assert(`${app}\n${styles}\n${server}`.includes(adminDashboardHook), `Missing admin dashboard hook: ${adminDashboardHook}`);
 }
 
 console.log('Content contract passed');

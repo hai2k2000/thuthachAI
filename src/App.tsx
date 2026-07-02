@@ -327,6 +327,15 @@ type ContactMessage = {
   status: string;
 };
 
+type AdminUser = {
+  id: string;
+  username: string;
+  displayName: string;
+  role: string;
+  status: string;
+  createdAt: string;
+};
+
 function CountdownBanner({ targetDate }: { targetDate: string }) {
   const remaining = useCountdown(targetDate);
   const deadlineLabel = '15:00 - 06/07/2026';
@@ -1352,6 +1361,8 @@ function AdminPage() {
   const [loginForm, setLoginForm] = useState({ username: 'admin', password: '' });
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', role: 'judge', password: '' });
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
 
   useEffect(() => {
@@ -1362,6 +1373,10 @@ function AdminPage() {
 
   function updateLoginField(field: keyof typeof loginForm, value: string) {
     setLoginForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateUserForm(field: keyof typeof userForm, value: string) {
+    setUserForm((current) => ({ ...current, [field]: value }));
   }
 
   async function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
@@ -1402,6 +1417,7 @@ function AdminPage() {
     setAdminUser('');
     setSubmissions([]);
     setMessages([]);
+    setAdminUsers([]);
     setStatus({ state: 'idle' });
     setLoginForm({ username: 'admin', password: '' });
   }
@@ -1414,20 +1430,24 @@ function AdminPage() {
 
     setStatus({ state: 'submitting' });
     try {
-      const [submissionResponse, contactResponse] = await Promise.all([
+      const [submissionResponse, contactResponse, userResponse] = await Promise.all([
         fetch('/api/admin/submissions', { headers: { 'x-admin-token': nextToken } }),
         fetch('/api/admin/contact-messages', { headers: { 'x-admin-token': nextToken } }),
+        fetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } }),
       ]);
       const submissionData = await submissionResponse.json().catch(() => ({} as { submissions?: AdminSubmission[]; errors?: string[] }));
       const contactData = await contactResponse.json().catch(() => ({} as { messages?: ContactMessage[]; errors?: string[] }));
+      const userData = await userResponse.json().catch(() => ({} as { users?: AdminUser[]; errors?: string[] }));
 
       if (!submissionResponse.ok) throw new Error(submissionData.errors?.join(' ') || 'Không thể tải danh sách bài dự thi.');
       if (!contactResponse.ok) throw new Error(contactData.errors?.join(' ') || 'Không thể tải danh sách liên hệ.');
+      if (!userResponse.ok) throw new Error(userData.errors?.join(' ') || 'Không thể tải danh sách tài khoản.');
 
       window.localStorage.setItem('aiChallengeAdminToken', nextToken);
       setToken(nextToken);
       setSubmissions(submissionData.submissions ?? []);
       setMessages(contactData.messages ?? []);
+      setAdminUsers(userData.users ?? []);
       setStatus({ state: 'success', receiptId: '', message: 'Đã tải dữ liệu quản trị.' });
     } catch (error) {
       setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể tải dữ liệu quản trị.' });
@@ -1454,6 +1474,58 @@ function AdminPage() {
       setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể cập nhật bài dự thi.' });
     }
   }
+
+  async function createAdminUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!userForm.username.trim() || !userForm.password.trim()) {
+      setStatus({ state: 'error', message: 'Vui lòng nhập tên đăng nhập và mật khẩu tài khoản mới.' });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-admin-token': token,
+        },
+        body: JSON.stringify(userForm),
+      });
+      const data = await response.json().catch(() => ({} as { user?: AdminUser; errors?: string[] }));
+      if (!response.ok || !data.user) {
+        throw new Error(data.errors?.join(' ') || 'Không thể tạo tài khoản quản trị.');
+      }
+      setAdminUsers((current) => [...current, data.user!]);
+      setUserForm({ username: '', displayName: '', role: 'judge', password: '' });
+      setStatus({ state: 'success', receiptId: '', message: 'Đã tạo tài khoản quản trị.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể tạo tài khoản quản trị.' });
+    }
+  }
+
+  async function updateAdminUser(id: string, patch: Partial<AdminUser> & { password?: string }) {
+    try {
+      const response = await fetch(`/api/admin/users/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          'x-admin-token': token,
+        },
+        body: JSON.stringify(patch),
+      });
+      const data = await response.json().catch(() => ({} as { user?: AdminUser; errors?: string[] }));
+      if (!response.ok || !data.user) {
+        throw new Error(data.errors?.join(' ') || 'Không thể cập nhật tài khoản quản trị.');
+      }
+      setAdminUsers((current) => current.map((user) => (user.id === id ? data.user! : user)));
+      setStatus({ state: 'success', receiptId: '', message: 'Đã cập nhật tài khoản quản trị.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể cập nhật tài khoản quản trị.' });
+    }
+  }
+
+  const pendingScoringCount = submissions.filter((submission) => submission.reviewStatus !== 'scored').length;
+  const scoredCount = submissions.filter((submission) => submission.reviewStatus === 'scored').length;
 
   return (
     <PageContainer>
@@ -1507,8 +1579,21 @@ function AdminPage() {
 
       {!token ? null : (
         <>
+      <section className="adminOverviewGrid">
+        <StatCard value={String(submissions.length)} label="Bài dự thi" />
+        <StatCard value={String(pendingScoringCount)} label="Chờ chấm" />
+        <StatCard value={String(scoredCount)} label="Đã chấm" accent />
+        <StatCard value={String(adminUsers.length)} label="Tài khoản" />
+      </section>
 
-      <section className="adminSection">
+      <nav className="adminModuleNav" aria-label="Điều hướng quản trị">
+        <a href="#admin-submissions"><Icon name="folder_open" /> Quản lý bài dự thi</a>
+        <a href="#admin-scoring"><Icon name="grading" /> Chấm điểm bài thi</a>
+        <a href="#admin-users"><Icon name="manage_accounts" /> Quản trị user</a>
+        <a href="#admin-support"><Icon name="support_agent" /> Hỗ trợ</a>
+      </nav>
+
+      <section className="adminSection" id="admin-submissions">
         <SectionHeading title="Quản lý bài dự thi" action={<ResultsCount count={submissions.length} label="bài" />} />
         {submissions.length ? (
           <div className="adminSubmissionList">
@@ -1576,7 +1661,117 @@ function AdminPage() {
         )}
       </section>
 
-      <section className="adminSection">
+      <section className="adminSection adminScorePanel" id="admin-scoring">
+        <SectionHeading title="Chấm điểm bài thi" description="Cập nhật trạng thái chấm, điểm số 0-100 và ghi chú giám khảo cho từng bài dự thi." action={<ResultsCount count={submissions.length} label="bài" />} />
+        {submissions.length ? (
+          <div className="tableWrap adminScoreTable">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bài dự thi</th>
+                  <th>Người nộp</th>
+                  <th>Trạng thái</th>
+                  <th>Điểm</th>
+                  <th>Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody>
+                {submissions.map((submission) => (
+                  <tr key={`score-${submission.id}`}>
+                    <td>
+                      <strong>{submission.title}</strong>
+                      <span>{submission.id}</span>
+                    </td>
+                    <td>{submission.participantName}<br /><small>{submission.department}</small></td>
+                    <td>
+                      <select name={`scoreReviewStatus-${submission.id}`} value={submission.reviewStatus} onChange={(event) => updateSubmission(submission.id, { reviewStatus: event.target.value })}>
+                        <option value="pending">Chờ chấm</option>
+                        <option value="reviewing">Đang chấm</option>
+                        <option value="scored">Đã chấm</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input name={`scoreTable-${submission.id}`} type="number" min="0" max="100" defaultValue={submission.score} onBlur={(event) => updateSubmission(submission.id, { score: Number(event.currentTarget.value) } as Partial<AdminSubmission>)} />
+                    </td>
+                    <td>
+                      <textarea name={`scoreNote-${submission.id}`} rows={2} defaultValue={submission.judgeNote} onBlur={(event) => updateSubmission(submission.id, { judgeNote: event.currentTarget.value })} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="Chưa có bài để chấm" description="Khi có bài dự thi mới, bảng chấm điểm sẽ hiển thị tại đây." />
+        )}
+      </section>
+
+      <section className="adminSection adminUserPanel" id="admin-users">
+        <SectionHeading title="Quản trị tài khoản" description="Tạo tài khoản cho Ban tổ chức, giám khảo hoặc người chỉ xem dữ liệu." action={<ResultsCount count={adminUsers.length} label="user" />} />
+        <div className="adminUserLayout">
+          <form className="card adminUserForm" onSubmit={createAdminUser}>
+            <h3>Tạo tài khoản mới</h3>
+            <label className="formField">
+              <span>Tên đăng nhập</span>
+              <input name="newAdminUsername" value={userForm.username} onChange={(event) => updateUserForm('username', event.target.value)} placeholder="vd: giamkhao01" />
+            </label>
+            <label className="formField">
+              <span>Tên hiển thị</span>
+              <input name="newAdminDisplayName" value={userForm.displayName} onChange={(event) => updateUserForm('displayName', event.target.value)} placeholder="Ban giám khảo 01" />
+            </label>
+            <label className="formField">
+              <span>Vai trò</span>
+              <select name="newAdminRole" value={userForm.role} onChange={(event) => updateUserForm('role', event.target.value)}>
+                <option value="admin">Quản trị</option>
+                <option value="judge">Giám khảo</option>
+                <option value="viewer">Chỉ xem</option>
+              </select>
+            </label>
+            <label className="formField">
+              <span>Mật khẩu</span>
+              <input name="newAdminPassword" type="password" value={userForm.password} onChange={(event) => updateUserForm('password', event.target.value)} placeholder="Tối thiểu 6 ký tự" />
+            </label>
+            <button type="submit" className="primaryButton"><Icon name="person_add" /> Tạo user</button>
+          </form>
+          <div className="adminUserList">
+            {adminUsers.map((user) => (
+              <article className="card adminUserCard" key={user.id}>
+                <div>
+                  <strong>{user.displayName}</strong>
+                  <span>{user.username} · {formatDateTime(user.createdAt)}</span>
+                </div>
+                <label>
+                  <span>Vai trò</span>
+                  <select name={`adminRole-${user.id}`} value={user.role} onChange={(event) => updateAdminUser(user.id, { role: event.target.value })}>
+                    <option value="admin">Quản trị</option>
+                    <option value="judge">Giám khảo</option>
+                    <option value="viewer">Chỉ xem</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Trạng thái</span>
+                  <select name={`adminStatus-${user.id}`} value={user.status} onChange={(event) => updateAdminUser(user.id, { status: event.target.value })}>
+                    <option value="active">Đang hoạt động</option>
+                    <option value="locked">Khóa</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Đặt mật khẩu mới</span>
+                  <input name={`adminPassword-${user.id}`} type="password" placeholder="Để trống nếu không đổi" onBlur={(event) => {
+                    const nextPassword = event.currentTarget.value.trim();
+                    if (nextPassword) {
+                      void updateAdminUser(user.id, { password: nextPassword });
+                      event.currentTarget.value = '';
+                    }
+                  }} />
+                </label>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="adminSection" id="admin-support">
         <SectionHeading title="Yêu cầu hỗ trợ" action={<ResultsCount count={messages.length} label="yêu cầu" />} />
         {messages.length ? (
           <div className="tableWrap">

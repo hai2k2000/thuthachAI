@@ -8,6 +8,14 @@ import multer from 'multer';
 
 import { buildAdminLoginResponse } from './admin-auth.mjs';
 import {
+  adminRoles,
+  adminStatuses,
+  createPasswordHash,
+  normalizeAdminUserInput,
+  toPublicAdminUser,
+  verifyPassword,
+} from './admin-users.mjs';
+import {
   createSubmissionId,
   formatSubmissionsCsv,
   mapSubmissionRow,
@@ -84,6 +92,16 @@ db.exec(`
     attachment TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'new'
   );
+
+  CREATE TABLE IF NOT EXISTS admin_users (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    status TEXT NOT NULL DEFAULT 'active',
+    password_hash TEXT NOT NULL
+  );
 `);
 
 ensureSubmissionColumn('submission_files_json', "TEXT NOT NULL DEFAULT '[]'");
@@ -152,6 +170,30 @@ const insertContactMessage = db.prepare(`
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const listContactMessages = db.prepare('SELECT * FROM contact_messages ORDER BY created_at DESC');
+const listAdminUsers = db.prepare('SELECT * FROM admin_users ORDER BY created_at ASC');
+const findAdminUserByUsername = db.prepare('SELECT * FROM admin_users WHERE username = ?');
+const findAdminUserById = db.prepare('SELECT * FROM admin_users WHERE id = ?');
+const insertAdminUser = db.prepare(`
+  INSERT INTO admin_users (
+    id,
+    created_at,
+    username,
+    display_name,
+    role,
+    status,
+    password_hash
+  ) VALUES (?, ?, ?, ?, ?, ?, ?)
+`);
+const updateAdminUser = db.prepare(`
+  UPDATE admin_users
+  SET display_name = ?,
+      role = ?,
+      status = ?,
+      password_hash = ?
+  WHERE id = ?
+`);
+
+seedAdminUser();
 
 const storage = multer.diskStorage({
   destination(_request, _file, callback) {
@@ -187,6 +229,21 @@ app.get('/api/submissions/health', (_request, response) => {
 });
 
 app.post('/api/admin/login', (request, response) => {
+  const username = cleanText(request.body?.username, 60).toLowerCase();
+  const user = username ? findAdminUserByUsername.get(username) : null;
+  if (user) {
+    if (!adminToken) {
+      response.status(503).json({ ok: false, errors: ['Chua cau hinh token quan tri.'] });
+      return;
+    }
+    if (user.status !== 'active' || !verifyPassword(request.body?.password, user.password_hash)) {
+      response.status(401).json({ ok: false, errors: ['Sai tai khoan hoac mat khau quan tri.'] });
+      return;
+    }
+    response.json({ ok: true, token: adminToken, username: user.username, role: user.role });
+    return;
+  }
+
   const result = buildAdminLoginResponse(request.body, {
     username: adminUsername,
     password: adminPassword,
@@ -370,6 +427,67 @@ app.get('/api/admin/contact-messages', requireAdminToken, (_request, response) =
   response.json({ ok: true, messages });
 });
 
+app.get('/api/admin/users', requireAdminToken, (_request, response) => {
+  response.json({
+    ok: true,
+    users: listAdminUsers.all().map(toPublicAdminUser),
+    roles: adminRoles,
+    statuses: adminStatuses,
+  });
+});
+
+app.post('/api/admin/users', requireAdminToken, (request, response) => {
+  const validation = normalizeAdminUserInput(request.body, { requirePassword: true });
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
+    return;
+  }
+
+  const user = validation.user;
+  if (findAdminUserByUsername.get(user.username)) {
+    response.status(409).json({ ok: false, errors: ['Tai khoan quan tri da ton tai.'] });
+    return;
+  }
+
+  const id = `USR-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`;
+  insertAdminUser.run(
+    id,
+    new Date().toISOString(),
+    user.username,
+    user.displayName,
+    user.role,
+    user.status,
+    createPasswordHash(user.password),
+  );
+  response.status(201).json({ ok: true, user: toPublicAdminUser(findAdminUserById.get(id)) });
+});
+
+app.patch('/api/admin/users/:id', requireAdminToken, (request, response) => {
+  const id = String(request.params.id || '');
+  const current = findAdminUserById.get(id);
+  if (!current) {
+    response.status(404).json({ ok: false, errors: ['Khong tim thay tai khoan quan tri.'] });
+    return;
+  }
+
+  const validation = normalizeAdminUserInput({
+    username: current.username,
+    displayName: request.body?.displayName ?? current.display_name,
+    role: request.body?.role ?? current.role,
+    status: request.body?.status ?? current.status,
+    password: request.body?.password ?? '',
+  });
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
+    return;
+  }
+
+  const user = validation.user;
+  const passwordHash = user.password ? createPasswordHash(user.password) : current.password_hash;
+  updateAdminUser.run(user.displayName, user.role, user.status, passwordHash, id);
+  response.json({ ok: true, user: toPublicAdminUser(findAdminUserById.get(id)) });
+});
+
 app.get('/api/submissions/files/:storedName', requireAdminToken, (request, response) => {
   const storedName = path.basename(request.params.storedName);
   if (storedName !== request.params.storedName) {
@@ -406,6 +524,27 @@ app.use((error, _request, response, _next) => {
 app.listen(port, host, () => {
   console.log(`AI Challenge submissions API listening on http://${host}:${port}`);
 });
+
+function seedAdminUser() {
+  const validation = normalizeAdminUserInput({
+    username: adminUsername,
+    displayName: 'Administrator',
+    role: 'admin',
+    status: 'active',
+    password: adminPassword,
+  }, { requirePassword: true });
+  if (!validation.ok || findAdminUserByUsername.get(validation.user.username)) return;
+
+  insertAdminUser.run(
+    `USR-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`,
+    new Date().toISOString(),
+    validation.user.username,
+    validation.user.displayName,
+    validation.user.role,
+    validation.user.status,
+    createPasswordHash(validation.user.password),
+  );
+}
 
 function requireAdminToken(request, response, next) {
   const providedToken = request.get('x-admin-token') || request.query.token;
