@@ -2364,6 +2364,162 @@ td {
   font-weight: 800;
 }
 
+.assistantBot {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 75;
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.assistantBot > * {
+  pointer-events: auto;
+}
+
+.assistantBotPanel {
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(620px, calc(100vh - 112px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  overflow: hidden;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(35, 25, 26, .18);
+}
+
+.assistantBotHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: var(--primary);
+  color: #fff;
+}
+
+.assistantBotHeader div {
+  display: grid;
+  gap: 2px;
+}
+
+.assistantBotHeader span {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.assistantBotHeader strong {
+  font-size: 18px;
+}
+
+.assistantBotHeader .iconButton {
+  color: #fff;
+  border-color: rgba(255, 255, 255, .4);
+}
+
+.assistantMessages {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  overflow: auto;
+  padding: 14px;
+  background: var(--surface);
+}
+
+.assistantMessage {
+  max-width: 88%;
+  display: grid;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.assistantMessage p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.assistantMessage.user {
+  justify-self: end;
+  border-color: var(--primary);
+  background: #fff4f4;
+}
+
+.assistantActions,
+.assistantQuickQuestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assistantActions button,
+.assistantQuickQuestions button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--primary);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.assistantQuickQuestions {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+
+.assistantInput {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+
+.assistantInput input {
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.assistantInput button,
+.assistantBotToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+  box-shadow: var(--shadow);
+}
+
+.assistantInput button {
+  height: 44px;
+  border-radius: var(--radius-sm);
+}
+
+.assistantBotToggle {
+  min-height: 54px;
+  padding: 0 18px;
+  border-radius: 999px;
+}
+
 .siteFooter {
   min-height: 120px;
   display: flex;
@@ -2554,6 +2710,25 @@ td {
 
   .adminQuickLinks {
     grid-template-columns: 1fr;
+  }
+
+  .assistantBot {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .assistantBotPanel {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 92px);
+  }
+
+  .assistantMessage {
+    max-width: 94%;
+  }
+
+  .assistantBotToggle {
+    min-height: 50px;
+    padding-inline: 14px;
   }
 
   .floatingCard {

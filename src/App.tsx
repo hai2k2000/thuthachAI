@@ -90,6 +90,7 @@ export default function App() {
       <Header pathname={pathname} navigate={navigate} />
       {renderRoute(pathname, navigate, copy)}
       <Footer navigate={navigate} />
+      <AssistantBot navigate={navigate} />
       <Toast message={message} />
     </>
   );
@@ -131,6 +132,203 @@ function renderRoute(pathname: string, navigate: (href: string) => void, copy: (
     default:
       return <NotFoundPage navigate={navigate} />;
   }
+}
+
+type AssistantAction = {
+  label: string;
+  href: string;
+};
+
+type AssistantMessage = {
+  id: string;
+  role: 'bot' | 'user';
+  text: string;
+  actions?: AssistantAction[];
+};
+
+type AssistantAnswer = {
+  id: string;
+  title: string;
+  keywords: string[];
+  answer: string;
+  actions?: AssistantAction[];
+};
+
+const assistantQuickQuestions = [
+  'Hạn nộp bài tuần 1',
+  'Cách nộp bài dự thi',
+  'Nhóm dự thi',
+  'Ảnh đại diện bài dự thi',
+  'Bình chọn cộng đồng',
+  'Liên hệ Ban tổ chức',
+];
+
+const assistantAnswers: AssistantAnswer[] = [
+  {
+    id: 'deadline',
+    title: 'Hạn nộp bài tuần 1',
+    keywords: ['han nop', 'deadline', 'thoi han', 'tuan 1', 'nop bai khi nao'],
+    answer: 'Hạn nộp bài tuần 1 là 15:00 ngày 06/07/2026. Anh/chị nên gửi sớm để có thời gian kiểm tra file bài dự thi và file minh chứng.',
+    actions: [{ label: 'Nộp bài', href: '/submit' }, { label: 'Xem thể lệ', href: '/rules' }],
+  },
+  {
+    id: 'submit',
+    title: 'Cách nộp bài dự thi',
+    keywords: ['cach nop', 'nop bai', 'gui bai', 'form', 'upload', 'tai len'],
+    answer: 'Anh/chị vào form nộp bài, điền thông tin cá nhân, chọn nhóm dự thi, nhập nhật ký tác nghiệp, upload file bài dự thi và file minh chứng. Sau khi gửi, hệ thống trả mã tiếp nhận để Ban tổ chức đối chiếu.',
+    actions: [{ label: 'Mở form nộp bài', href: '/submit' }],
+  },
+  {
+    id: 'group',
+    title: 'Nhóm dự thi',
+    keywords: ['nhom', 'phong vien', 'bien tap', 'tong hop', 'kinh doanh', 'chon nhom'],
+    answer: 'Tuần 1 có 3 nhóm dự thi: Nhóm Phóng viên, Biên tập viên; Nhóm Tổng hợp; Nhóm Kinh doanh. Anh/chị chọn đúng nhóm tương ứng với đề bài của mình trong form nộp bài.',
+    actions: [{ label: 'Xem đề bài', href: '/challenges' }, { label: 'Nộp bài', href: '/submit' }],
+  },
+  {
+    id: 'cover',
+    title: 'Ảnh đại diện bài dự thi',
+    keywords: ['anh dai dien', 'cover', 'thumbnail', 'hinh dai dien', 'tu tao anh'],
+    answer: 'Ảnh đại diện bài dự thi là không bắt buộc. Nếu anh/chị không upload ảnh JPG, PNG hoặc WEBP, hệ thống sẽ tự tạo ảnh đại diện từ file bài dự thi đầu tiên.',
+    actions: [{ label: 'Nộp bài', href: '/submit' }],
+  },
+  {
+    id: 'vote',
+    title: 'Bình chọn cộng đồng',
+    keywords: ['binh chon', 'cong dong', 'danh gia', 'vote', 'nguoi xem'],
+    answer: 'Người xem có thể bình chọn cho các bài đã được Ban tổ chức duyệt hiển thị. Mỗi thiết bị chỉ được bình chọn một lần cho mỗi bài dự thi để hạn chế spam.',
+    actions: [{ label: 'Xem bài tiêu biểu', href: '/featured' }],
+  },
+  {
+    id: 'rules',
+    title: 'Thể lệ và chấm điểm',
+    keywords: ['the le', 'cham diem', 'tieu chi', '100 diem', 'giai thuong'],
+    answer: 'Bài dự thi được đánh giá theo thang 100 điểm, gồm mức độ phù hợp đề bài, hiệu quả ứng dụng AI, tính sáng tạo, chất lượng sản phẩm và tinh thần chia sẻ kinh nghiệm.',
+    actions: [{ label: 'Xem thể lệ', href: '/rules' }],
+  },
+  {
+    id: 'contact',
+    title: 'Liên hệ Ban tổ chức',
+    keywords: ['lien he', 'ho tro', 'ban to chuc', 'vu mai anh', 'gap loi'],
+    answer: 'Nếu cần hỗ trợ thêm, anh/chị gửi yêu cầu qua trang Liên hệ. Ban tổ chức sẽ kiểm tra nội dung và phản hồi theo thông tin anh/chị để lại.',
+    actions: [{ label: 'Gửi liên hệ', href: '/contact' }],
+  },
+];
+
+const assistantFallback: AssistantMessage = {
+  id: 'fallback',
+  role: 'bot',
+  text: 'Mình chưa tìm thấy câu trả lời thật khớp. Anh/chị có thể hỏi về hạn nộp, cách nộp bài, nhóm dự thi, ảnh đại diện, bình chọn cộng đồng hoặc gửi liên hệ cho Ban tổ chức.',
+  actions: [{ label: 'Xem thể lệ', href: '/rules' }, { label: 'Liên hệ', href: '/contact' }],
+};
+
+function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [messages, setMessages] = useState<AssistantMessage[]>([{
+    id: 'welcome',
+    role: 'bot',
+    text: 'Chào anh/chị, mình là Trợ lý Thử thách AI. Anh/chị cần hỏi nhanh về thể lệ, nộp bài hay bình chọn?',
+  }]);
+
+  function askAssistant(question: string) {
+    const cleanQuestion = question.trim();
+    if (!cleanQuestion) return;
+    const matched = matchAssistantAnswer(cleanQuestion);
+    const response = matched
+      ? { id: `bot-${Date.now()}`, role: 'bot' as const, text: matched.answer, actions: matched.actions }
+      : { ...assistantFallback, id: `bot-${Date.now()}` };
+    setMessages((current) => [
+      ...current,
+      { id: `user-${Date.now()}`, role: 'user', text: cleanQuestion },
+      response,
+    ]);
+    setDraft('');
+    setOpen(true);
+  }
+
+  return (
+    <aside className={`assistantBot${open ? ' isOpen' : ''}`} aria-label="Trợ lý Thử thách AI">
+      {open ? (
+        <section className="assistantBotPanel">
+          <div className="assistantBotHeader">
+            <div>
+              <span>Trợ lý Thử thách AI</span>
+              <strong>Hỏi đáp nhanh</strong>
+            </div>
+            <button type="button" className="iconButton" aria-label="Đóng trợ lý" onClick={() => setOpen(false)}>
+              <Icon name="close" />
+            </button>
+          </div>
+          <div className="assistantMessages" aria-live="polite">
+            {messages.map((message) => (
+              <article key={message.id} className={`assistantMessage ${message.role}`}>
+                <p>{message.text}</p>
+                {message.actions?.length ? (
+                  <div className="assistantActions">
+                    {message.actions.map((action) => (
+                      <button key={`${message.id}-${action.href}`} type="button" onClick={() => {
+                        navigate(action.href);
+                        setOpen(false);
+                      }}>
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+          <div className="assistantQuickQuestions" aria-label="Câu hỏi nhanh">
+            {assistantQuickQuestions.map((question) => (
+              <button key={question} type="button" onClick={() => askAssistant(question)}>
+                {question}
+              </button>
+            ))}
+          </div>
+          <form className="assistantInput" onSubmit={(event) => {
+            event.preventDefault();
+            askAssistant(draft);
+          }}>
+            <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Nhập câu hỏi..." />
+            <button type="submit" aria-label="Gửi câu hỏi">
+              <Icon name="send" />
+            </button>
+          </form>
+        </section>
+      ) : null}
+      <button type="button" className="assistantBotToggle" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+        <Icon name={open ? 'close' : 'support_agent'} />
+        <span>{open ? 'Đóng' : 'Hỏi đáp'}</span>
+      </button>
+    </aside>
+  );
+}
+
+function matchAssistantAnswer(question: string) {
+  const normalizedQuestion = normalizeAssistantText(question);
+  let bestMatch: { answer: AssistantAnswer; score: number } | null = null;
+
+  for (const answer of assistantAnswers) {
+    const searchable = [answer.title, ...answer.keywords].map(normalizeAssistantText);
+    const score = searchable.reduce((total, item) => total + (normalizedQuestion.includes(item) || item.includes(normalizedQuestion) ? 1 : 0), 0);
+    if (score > (bestMatch?.score || 0)) {
+      bestMatch = { answer, score };
+    }
+  }
+
+  return bestMatch?.score ? bestMatch.answer : null;
+}
+
+function normalizeAssistantText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function HomePage({ navigate }: { navigate: (href: string) => void }) {

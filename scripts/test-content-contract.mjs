@@ -147,4 +147,11 @@ for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiC
   assert(`${app}\n${styles}\n${server}`.includes(communityVoteHook), `Missing community vote hook: ${communityVoteHook}`);
 }
 
+for (const assistantBotHook of ['assistantBot', 'assistantBotPanel', 'Trợ lý Thử thách AI', 'assistantQuickQuestions', 'matchAssistantAnswer']) {
+  assert(`${app}\n${styles}`.includes(assistantBotHook), `Missing assistant bot hook: ${assistantBotHook}`);
+}
+for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài dự thi', 'Nhóm dự thi', 'Ảnh đại diện bài dự thi', 'Bình chọn cộng đồng', 'Liên hệ Ban tổ chức']) {
+  assert(app.includes(assistantAnswer), `Assistant bot must answer common question: ${assistantAnswer}`);
+}
+
 console.log('Content contract passed');
