@@ -1661,7 +1661,7 @@ function AdminPage() {
           <span>Thử thách AI</span>
           <strong>Quản trị</strong>
         </a>
-        <nav className="adminModuleNav" aria-label="Điều hướng quản trị">
+        <nav className="adminSidebarNav" aria-label="Điều hướng quản trị">
           <a href="#admin-overview"><Icon name="dashboard" /> Tổng quan</a>
           <a href="#admin-submissions"><Icon name="folder_open" /> Quản lý bài dự thi</a>
           <a href="#admin-scoring"><Icon name="grading" /> Chấm điểm bài thi</a>
@@ -1727,20 +1727,20 @@ function AdminPage() {
 
       {!token ? null : (
         <>
-      <section className="adminOverviewGrid" id="admin-overview">
-        <StatCard value={String(submissions.length)} label="Bài dự thi" />
-        <StatCard value={String(pendingScoringCount)} label="Chờ chấm" />
-        <StatCard value={String(scoredCount)} label="Đã chấm" accent />
-        <StatCard value={String(communityVoteTotal)} label="Bình chọn" />
-        <StatCard value={String(adminUsers.length)} label="Tài khoản" />
+      <section className="adminOverviewPanel" id="admin-overview">
+        <div className="adminOverviewIntro">
+          <span>Tổng quan hệ thống</span>
+          <h2>Trạng thái cuộc thi</h2>
+          <p>Theo dõi nhanh số bài nộp, tiến độ chấm điểm, bình chọn cộng đồng và tài khoản quản trị.</p>
+        </div>
+        <div className="adminOverviewGrid">
+          <StatCard value={String(submissions.length)} label="Bài dự thi" />
+          <StatCard value={String(pendingScoringCount)} label="Chờ chấm" />
+          <StatCard value={String(scoredCount)} label="Đã chấm" accent />
+          <StatCard value={String(communityVoteTotal)} label="Bình chọn" />
+          <StatCard value={String(adminUsers.length)} label="Tài khoản" />
+        </div>
       </section>
-
-      <nav className="adminModuleNav" aria-label="Điều hướng quản trị">
-        <a href="#admin-submissions"><Icon name="folder_open" /> Quản lý bài dự thi</a>
-        <a href="#admin-scoring"><Icon name="grading" /> Chấm điểm bài thi</a>
-        <a href="#admin-users"><Icon name="manage_accounts" /> Quản trị user</a>
-        <a href="#admin-support"><Icon name="support_agent" /> Hỗ trợ</a>
-      </nav>
 
       <section className="adminSection" id="admin-submissions">
         <SectionHeading title="Quản lý bài dự thi" action={<ResultsCount count={submissions.length} label="bài" />} />

@@ -111,13 +111,14 @@ for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', 
   assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);
 }
 
-for (const adminDashboardHook of ['adminOverviewGrid', 'adminModuleNav', 'adminScorePanel', 'adminUserPanel', 'adminUserForm', '/api/admin/users']) {
+for (const adminDashboardHook of ['adminOverviewGrid', 'adminSidebarNav', 'adminScorePanel', 'adminUserPanel', 'adminUserForm', '/api/admin/users']) {
   assert(`${app}\n${styles}\n${server}`.includes(adminDashboardHook), `Missing admin dashboard hook: ${adminDashboardHook}`);
 }
 
-for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain']) {
+for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain', 'adminOverviewPanel']) {
   assert(`${app}\n${styles}`.includes(adminLayoutHook), `Missing standalone admin layout hook: ${adminLayoutHook}`);
 }
+assert(!app.includes('className="adminModuleNav"'), 'Admin content must not duplicate sidebar navigation');
 
 for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiChallengeCommunityDeviceId', '/api/public/submissions/:id/vote', 'community_votes']) {
   assert(`${app}\n${styles}\n${server}`.includes(communityVoteHook), `Missing community vote hook: ${communityVoteHook}`);
