@@ -147,11 +147,14 @@ img {
 }
 
 .desktopNav a {
-  min-height: 32px;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   border-bottom: 2px solid transparent;
-  font-size: 13px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
@@ -3379,8 +3382,12 @@ td {
 }
 
 .mobileMenuPanel nav a {
-  padding: 12px;
+  padding: 14px 12px;
   border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .mobileMenuPanel nav a.active,

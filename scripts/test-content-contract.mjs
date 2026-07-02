@@ -109,10 +109,17 @@ for (const coverImageHook of ['coverImage', 'Ảnh đại diện bài dự thi',
 
 const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
 assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
+assert(desktopNavStyles.includes('font-size: 15px;'), 'Desktop nav links must use a larger readable font size');
+assert(desktopNavStyles.includes('font-weight: 900;'), 'Desktop nav links must be visually bold');
 const navItemsBlock = components.match(/const navItems = \[([\s\S]*?)\];/)?.[1] || '';
 assert(!navItemsBlock.includes('Bài tiêu biểu'), 'Desktop nav must hide the featured submissions menu item');
 assert(!navItemsBlock.includes("href: '/ai-news'"), 'Header menu must hide AI news');
 assert(!navItemsBlock.includes("href: '/forum'"), 'Header menu must hide AI forum');
+const mobileNavStyles = [...styles.matchAll(/\.mobileMenuPanel nav a\s*{[^}]*}/g)]
+  .map((match) => match[0])
+  .find((block) => block.includes('padding: 14px 12px;')) || '';
+assert(mobileNavStyles.includes('font-size: 16px;'), 'Mobile nav links must use a larger readable font size');
+assert(mobileNavStyles.includes('font-weight: 900;'), 'Mobile nav links must be visually bold');
 for (const headerRowHook of ['headerMainRow', 'headerNavRow', 'headerActionsRow']) {
   assert(`${components}\n${styles}`.includes(headerRowHook), `Header must separate utility actions into their own row: ${headerRowHook}`);
 }
