@@ -2880,6 +2880,27 @@ td {
   background: #fff4f4;
 }
 
+.assistantTypingBubble {
+  border-color: var(--primary-soft);
+}
+
+.assistantTypingCursor {
+  width: 7px;
+  height: 1.15em;
+  display: inline-block;
+  margin-left: 3px;
+  border-radius: 999px;
+  background: var(--primary);
+  vertical-align: -2px;
+  animation: assistantTypingCursor .78s steps(2, start) infinite;
+}
+
+@keyframes assistantTypingCursor {
+  50% {
+    opacity: .18;
+  }
+}
+
 .assistantActions,
 .assistantQuickQuestions {
   display: flex;

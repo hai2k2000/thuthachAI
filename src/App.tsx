@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppLink,
   Badge,
@@ -160,12 +160,8 @@ type AssistantAnswer = {
 };
 
 const assistantQuickQuestions = [
-  'Hạn nộp bài tuần 1',
   'Cách nộp bài dự thi',
-  'Nhóm dự thi',
-  'Ảnh đại diện bài dự thi',
-  'Bình chọn cộng đồng',
-  'Liên hệ Ban tổ chức',
+  'Diễn đàn AI dùng thế nào?',
 ];
 
 const assistantAnswers: AssistantAnswer[] = [
@@ -218,6 +214,13 @@ const assistantAnswers: AssistantAnswer[] = [
     answer: 'Nếu cần hỗ trợ thêm, anh/chị gửi yêu cầu qua trang Liên hệ. Ban tổ chức sẽ kiểm tra nội dung và phản hồi theo thông tin anh/chị để lại.',
     actions: [{ label: 'Gửi liên hệ', href: '/contact' }],
   },
+  {
+    id: 'forum',
+    title: 'Diễn đàn AI',
+    keywords: ['dien dan', 'forum', 'trao doi', 'chia se kinh nghiem', 'hoi dap ai'],
+    answer: 'Diễn đàn AI là nơi mọi người đăng chủ đề, hỏi đáp công cụ, chia sẻ prompt và kinh nghiệm sử dụng AI trong công việc. Anh/chị có thể mở chủ đề mới hoặc phản hồi trực tiếp dưới từng thảo luận.',
+    actions: [{ label: 'Mở Diễn đàn AI', href: '/forum' }, { label: 'Xem Kho Prompt', href: '/prompts' }],
+  },
 ];
 
 const assistantFallback: AssistantMessage = {
@@ -230,15 +233,23 @@ const assistantFallback: AssistantMessage = {
 function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [typingMessageId, setTypingMessageId] = useState('');
+  const [typedAssistantText, setTypedAssistantText] = useState('');
+  const typingTimer = useRef<number | null>(null);
   const [messages, setMessages] = useState<AssistantMessage[]>([{
     id: 'welcome',
     role: 'bot',
     text: 'Chào anh/chị, mình là Trợ lý Thử thách AI. Anh/chị cần hỏi nhanh về thể lệ, nộp bài hay bình chọn?',
   }]);
 
+  useEffect(() => () => {
+    if (typingTimer.current) window.clearInterval(typingTimer.current);
+  }, []);
+
   function askAssistant(question: string) {
     const cleanQuestion = question.trim();
     if (!cleanQuestion) return;
+    if (typingTimer.current) window.clearInterval(typingTimer.current);
     const matched = matchAssistantAnswer(cleanQuestion);
     const response = matched
       ? { id: `bot-${Date.now()}`, role: 'bot' as const, text: matched.answer, actions: matched.actions }
@@ -248,6 +259,19 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
       { id: `user-${Date.now()}`, role: 'user', text: cleanQuestion },
       response,
     ]);
+    setTypingMessageId(response.id);
+    setTypedAssistantText('');
+    let nextLength = 0;
+    typingTimer.current = window.setInterval(() => {
+      nextLength += 2;
+      setTypedAssistantText(response.text.slice(0, nextLength));
+      if (nextLength >= response.text.length) {
+        if (typingTimer.current) window.clearInterval(typingTimer.current);
+        typingTimer.current = null;
+        setTypingMessageId('');
+        setTypedAssistantText('');
+      }
+    }, 18);
     setDraft('');
     setOpen(true);
   }
@@ -266,10 +290,15 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
             </button>
           </div>
           <div className="assistantMessages" aria-live="polite">
-            {messages.map((message) => (
-              <article key={message.id} className={`assistantMessage ${message.role}`}>
-                <p>{message.text}</p>
-                {message.actions?.length ? (
+            {messages.map((message) => {
+              const isTyping = message.id === typingMessageId;
+              return (
+              <article key={message.id} className={`assistantMessage ${message.role}${isTyping ? ' assistantTypingBubble' : ''}`}>
+                <p>
+                  {isTyping ? typedAssistantText || 'Đang trả lời' : message.text}
+                  {isTyping ? <span className="assistantTypingCursor" aria-hidden="true" /> : null}
+                </p>
+                {message.actions?.length && !isTyping ? (
                   <div className="assistantActions">
                     {message.actions.map((action) => (
                       <button key={`${message.id}-${action.href}`} type="button" onClick={() => {
@@ -282,7 +311,8 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
                   </div>
                 ) : null}
               </article>
-            ))}
+              );
+            })}
           </div>
           <div className="assistantQuickQuestions" aria-label="Câu hỏi nhanh">
             {assistantQuickQuestions.map((question) => (

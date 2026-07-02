@@ -152,6 +152,12 @@ for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiC
 for (const assistantBotHook of ['assistantBot', 'assistantBotPanel', 'Trợ lý Thử thách AI', 'assistantQuickQuestions', 'matchAssistantAnswer']) {
   assert(`${app}\n${styles}`.includes(assistantBotHook), `Missing assistant bot hook: ${assistantBotHook}`);
 }
+const assistantQuickQuestionsBlock = app.match(/const assistantQuickQuestions = \[([\s\S]*?)\];/)?.[1] || '';
+const assistantQuickQuestionCount = (assistantQuickQuestionsBlock.match(/'/g) || []).length / 2;
+assert(assistantQuickQuestionCount === 2, `Assistant bot must expose exactly 2 suggested questions, found ${assistantQuickQuestionCount}`);
+for (const assistantTypingHook of ['typingMessageId', 'assistantTypingBubble', 'assistantTypingCursor']) {
+  assert(`${app}\n${styles}`.includes(assistantTypingHook), `Missing assistant typing effect hook: ${assistantTypingHook}`);
+}
 for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài dự thi', 'Nhóm dự thi', 'Ảnh đại diện bài dự thi', 'Bình chọn cộng đồng', 'Liên hệ Ban tổ chức']) {
   assert(app.includes(assistantAnswer), `Assistant bot must answer common question: ${assistantAnswer}`);
 }
