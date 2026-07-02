@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import {
   createSubmissionId,
+  createGeneratedCoverSvg,
   formatSubmissionsCsv,
+  mapSubmissionRow,
   normalizeSubmissionFields,
   validateSubmissionFields,
 } from '../server/submission-utils.mjs';
@@ -87,6 +89,61 @@ test('creates readable submission ids with date prefix', () => {
   assert.equal(id, 'TD-20260701-ABC123XY');
 });
 
+test('creates a generated cover svg from submission content when no cover is uploaded', () => {
+  const svg = createGeneratedCoverSvg({
+    title: 'Tro ly tom tat phan hoi doc gia',
+    participantName: 'Nguyen Van A',
+    challengeGroup: 'Nhóm Tổng hợp',
+    problem: 'Noi dung bai du thi can hien thi thanh anh dai dien.',
+  }, {
+    originalName: 'bai-du-thi.docx',
+  });
+
+  assert.match(svg, /^<svg /);
+  assert.match(svg, /Tro ly tom tat phan hoi doc gia/);
+  assert.match(svg, /bai-du-thi\.docx/);
+});
+
+test('maps cover image metadata with a public cover URL', () => {
+  const submission = mapSubmissionRow({
+    id: 'TD-20260701-ABC123XY',
+    created_at: '2026-07-01T10:20:30.000Z',
+    participant_name: 'Nguyen Van A',
+    department: 'Ban Bien tap',
+    contact: 'nguyenvana@example.com',
+    email: '',
+    week: '2',
+    challenge_group: 'Nhóm Tổng hợp',
+    title: 'Tro ly tom tat phan hoi doc gia',
+    ai_tools: 'ChatGPT',
+    problem: 'Noi dung bai du thi',
+    process_summary: 'Phan loai va doi chieu ket qua',
+    main_prompt: 'Hay tom tat van ban.',
+    final_result: 'Tiet kiem 80% thoi gian',
+    lessons: 'Can kiem tra lai so lieu',
+    recommendations: 'Dung lam quy trinh chung',
+    public_prompt: 1,
+    review_status: 'scored',
+    prompt_status: 'approved',
+    featured_status: 'approved',
+    score: 90,
+    judge_note: 'Bai tot',
+    submission_files_json: '[]',
+    files_json: '[]',
+    workflow_steps_json: '[]',
+    cover_image_json: JSON.stringify({
+      storedName: 'TD-20260701-ABC123XY-anh-dai-dien-auto.svg',
+      originalName: 'Anh dai dien tu dong',
+      mimeType: 'image/svg+xml',
+      size: 2048,
+      generated: true,
+    }),
+  }, { publicBaseUrl: 'https://thuthachai.io.vn', token: 'secret' });
+
+  assert.equal(submission.coverImage.generated, true);
+  assert.equal(submission.coverImage.url, 'https://thuthachai.io.vn/api/submissions/covers/TD-20260701-ABC123XY-anh-dai-dien-auto.svg');
+});
+
 test('formats submissions as csv with quoted values and file links', () => {
   const csv = formatSubmissionsCsv([
     {
@@ -112,6 +169,10 @@ test('formats submissions as csv with quoted values and file links', () => {
       featuredStatus: 'approved',
       score: 90,
       judgeNote: 'Bai tot',
+      coverImage: {
+        originalName: 'Anh dai dien tu dong',
+        url: 'https://thuthachai.io.vn/api/submissions/covers/cover.svg',
+      },
       submissionFiles: [
         {
           originalName: 'bai-du-thi.docx',
@@ -130,6 +191,8 @@ test('formats submissions as csv with quoted values and file links', () => {
   ]);
 
   assert.match(csv, /^id,createdAt,participantName,/);
+  assert.match(csv, /coverImage/);
+  assert.match(csv, /https:\/\/thuthachai\.io\.vn\/api\/submissions\/covers\/cover\.svg/);
   assert.match(csv, /"Tro ly tom tat, phan loai"/);
   assert.match(csv, /"Hay tom tat ""van ban"" theo nhom chu de\."/);
   assert.match(csv, /bai-du-thi\.docx/);

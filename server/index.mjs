@@ -21,8 +21,10 @@ import {
   summarizeCommunityVotes,
 } from './community-votes.mjs';
 import {
+  createGeneratedCoverSvg,
   createSubmissionId,
   formatSubmissionsCsv,
+  isCoverImageFile,
   mapSubmissionRow,
   normalizeSubmissionFields,
   validateSubmissionFields,
@@ -41,6 +43,7 @@ const communityVoteSecret = process.env.COMMUNITY_VOTE_SECRET || 'thuthachai-com
 const maxUploadMb = Number(process.env.MAX_UPLOAD_MB || 25);
 const maxUploadFiles = Number(process.env.MAX_UPLOAD_FILES || 5);
 const maxSubmissionFiles = Number(process.env.MAX_SUBMISSION_FILES || 3);
+const maxCoverImages = 1;
 const port = Number(process.env.PORT || 4310);
 const host = process.env.HOST || '127.0.0.1';
 
@@ -126,6 +129,7 @@ ensureSubmissionColumn('prompt_status', "TEXT NOT NULL DEFAULT 'pending'");
 ensureSubmissionColumn('featured_status', "TEXT NOT NULL DEFAULT 'pending'");
 ensureSubmissionColumn('score', 'INTEGER NOT NULL DEFAULT 0');
 ensureSubmissionColumn('judge_note', "TEXT NOT NULL DEFAULT ''");
+ensureSubmissionColumn('cover_image_json', "TEXT NOT NULL DEFAULT ''");
 
 const insertSubmission = db.prepare(`
   INSERT INTO submissions (
@@ -153,15 +157,16 @@ const insertSubmission = db.prepare(`
     featured_status,
     score,
     judge_note,
+    cover_image_json,
     files_json
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const listSubmissions = db.prepare('SELECT * FROM submissions ORDER BY created_at DESC');
 const listPublicFeatured = db.prepare("SELECT * FROM submissions WHERE featured_status = 'approved' ORDER BY score DESC, created_at DESC");
 const listPublicPrompts = db.prepare("SELECT * FROM submissions WHERE public_prompt = 1 AND prompt_status = 'approved' ORDER BY created_at DESC");
 const listLeaderboard = db.prepare("SELECT * FROM submissions WHERE score > 0 ORDER BY score DESC, created_at ASC");
-const listFiles = db.prepare('SELECT submission_files_json, files_json FROM submissions ORDER BY created_at DESC');
+const listFiles = db.prepare('SELECT submission_files_json, files_json, cover_image_json FROM submissions ORDER BY created_at DESC');
 const findSubmissionById = db.prepare('SELECT * FROM submissions WHERE id = ?');
 const listCommunityVotesBySubmission = db.prepare('SELECT reaction FROM community_votes WHERE submission_id = ?');
 const findCommunityVoteByKey = db.prepare('SELECT id FROM community_votes WHERE submission_id = ? AND voter_key = ?');
@@ -234,10 +239,14 @@ const upload = multer({
   storage,
   limits: {
     fileSize: maxUploadMb * 1024 * 1024,
-    files: maxUploadFiles + maxSubmissionFiles,
+    files: maxUploadFiles + maxSubmissionFiles + maxCoverImages,
   },
   fileFilter(_request, file, callback) {
     const extension = path.extname(file.originalname).toLowerCase();
+    if (file.fieldname === 'coverImage' && !isCoverImageFile(file)) {
+      callback(new Error('UNSUPPORTED_COVER_IMAGE_TYPE'));
+      return;
+    }
     if (!allowedExtensions.has(extension)) {
       callback(new Error('UNSUPPORTED_FILE_TYPE'));
       return;
@@ -281,12 +290,15 @@ app.post('/api/admin/login', (request, response) => {
 app.post('/api/submissions', upload.fields([
   { name: 'submissionFiles', maxCount: maxSubmissionFiles },
   { name: 'evidenceFiles', maxCount: maxUploadFiles },
+  { name: 'coverImage', maxCount: maxCoverImages },
 ]), (request, response) => {
   const submissionFiles = request.files?.submissionFiles || [];
   const evidenceFiles = request.files?.evidenceFiles || [];
-  const uploadedFiles = [...submissionFiles, ...evidenceFiles];
+  const coverImageFiles = request.files?.coverImage || [];
+  const coverImageFile = coverImageFiles[0] || null;
+  const uploadedFiles = [...submissionFiles, ...evidenceFiles, ...coverImageFiles];
   const fields = normalizeSubmissionFields(request.body);
-  const validation = validateSubmissionFields(fields, { submissionFiles, evidenceFiles });
+  const validation = validateSubmissionFields(fields, { submissionFiles, evidenceFiles, coverImage: coverImageFiles });
 
   if (!validation.ok) {
     removeTempFiles(uploadedFiles);
@@ -298,6 +310,7 @@ app.post('/api/submissions', upload.fields([
   const createdAt = new Date().toISOString();
   const finalSubmissionFiles = [];
   const finalEvidenceFiles = [];
+  let finalCoverImage = null;
 
   try {
     for (const [index, file] of submissionFiles.entries()) {
@@ -309,6 +322,10 @@ app.post('/api/submissions', upload.fields([
       const finalFile = moveUploadedFile(id, 'minh-chung', index, file);
       finalEvidenceFiles.push(finalFile);
     }
+
+    finalCoverImage = coverImageFile
+      ? moveUploadedFile(id, 'anh-dai-dien', 0, coverImageFile)
+      : createAutoCoverImage(id, fields, finalSubmissionFiles[0]);
 
     insertSubmission.run(
       id,
@@ -335,6 +352,7 @@ app.post('/api/submissions', upload.fields([
       'pending',
       0,
       '',
+      finalCoverImage ? JSON.stringify(finalCoverImage) : '',
       JSON.stringify(finalEvidenceFiles),
     );
 
@@ -345,7 +363,7 @@ app.post('/api/submissions', upload.fields([
       message: 'Bai du thi da duoc tiep nhan.',
     });
   } catch (error) {
-    removeStoredFiles([...finalSubmissionFiles, ...finalEvidenceFiles]);
+    removeStoredFiles([...finalSubmissionFiles, ...finalEvidenceFiles, finalCoverImage].filter(Boolean));
     removeTempFiles(uploadedFiles);
     console.error('Failed to save submission', error);
     response.status(500).json({ ok: false, errors: ['Khong the luu bai du thi. Vui long thu lai.'] });
@@ -573,6 +591,29 @@ app.patch('/api/admin/users/:id', requireAdminToken, (request, response) => {
   response.json({ ok: true, user: toPublicAdminUser(findAdminUserById.get(id)) });
 });
 
+app.get('/api/submissions/covers/:storedName', (request, response) => {
+  const storedName = path.basename(request.params.storedName);
+  if (storedName !== request.params.storedName) {
+    response.status(400).json({ ok: false, errors: ['Ten anh dai dien khong hop le.'] });
+    return;
+  }
+
+  const coverImage = findCoverImage(storedName);
+  if (!coverImage) {
+    response.status(404).json({ ok: false, errors: ['Khong tim thay anh dai dien.'] });
+    return;
+  }
+
+  const filePath = path.join(uploadDir, storedName);
+  if (!fs.existsSync(filePath)) {
+    response.status(404).json({ ok: false, errors: ['Khong tim thay anh dai dien.'] });
+    return;
+  }
+
+  response.setHeader('cache-control', 'public, max-age=86400');
+  response.sendFile(filePath);
+});
+
 app.get('/api/submissions/files/:storedName', requireAdminToken, (request, response) => {
   const storedName = path.basename(request.params.storedName);
   if (storedName !== request.params.storedName) {
@@ -595,11 +636,15 @@ app.use((error, _request, response, _next) => {
     return;
   }
   if (error?.code === 'LIMIT_FILE_COUNT') {
-    response.status(413).json({ ok: false, errors: [`Moi lan gui toi da ${maxSubmissionFiles + maxUploadFiles} file.`] });
+    response.status(413).json({ ok: false, errors: [`Moi lan gui toi da ${maxSubmissionFiles + maxUploadFiles + maxCoverImages} file.`] });
     return;
   }
   if (error?.message === 'UNSUPPORTED_FILE_TYPE') {
     response.status(400).json({ ok: false, errors: ['Dinh dang file chua duoc ho tro.'] });
+    return;
+  }
+  if (error?.message === 'UNSUPPORTED_COVER_IMAGE_TYPE') {
+    response.status(400).json({ ok: false, errors: ['Anh dai dien chi ho tro JPG, PNG hoac WEBP.'] });
     return;
   }
   console.error('Unhandled API error', error);
@@ -653,6 +698,41 @@ function moveUploadedFile(submissionId, kind, index, file) {
   };
 }
 
+function createAutoCoverImage(submissionId, fields, sourceFile) {
+  if (!sourceFile?.storedName) return null;
+
+  if (isCoverImageFile(sourceFile)) {
+    const extension = path.extname(sourceFile.storedName).toLowerCase() || '.png';
+    const storedName = `${submissionId}-anh-dai-dien-auto-${randomUUID()}${extension}`;
+    const sourcePath = path.join(uploadDir, sourceFile.storedName);
+    const coverPath = path.join(uploadDir, storedName);
+    fs.copyFileSync(sourcePath, coverPath);
+    const stat = fs.statSync(coverPath);
+    return {
+      storedName,
+      originalName: `Ảnh đại diện tự tạo từ ${sourceFile.originalName}`,
+      mimeType: sourceFile.mimeType || 'image/png',
+      size: stat.size,
+      generated: true,
+      sourceFile: sourceFile.originalName,
+    };
+  }
+
+  const storedName = `${submissionId}-anh-dai-dien-auto-${randomUUID()}.svg`;
+  const coverPath = path.join(uploadDir, storedName);
+  const svg = createGeneratedCoverSvg(fields, sourceFile);
+  fs.writeFileSync(coverPath, svg, 'utf8');
+  const stat = fs.statSync(coverPath);
+  return {
+    storedName,
+    originalName: 'Ảnh đại diện tự tạo từ file bài dự thi.svg',
+    mimeType: 'image/svg+xml',
+    size: stat.size,
+    generated: true,
+    sourceFile: sourceFile.originalName,
+  };
+}
+
 function sanitizeOriginalName(value) {
   return String(value || 'file')
     .replace(/[\\/:*?"<>|\x00-\x1F]/g, '_')
@@ -676,11 +756,31 @@ function findOriginalName(storedName) {
     const files = [
       ...JSON.parse(row.submission_files_json || '[]'),
       ...JSON.parse(row.files_json || '[]'),
+      ...normalizeStoredFiles(row.cover_image_json),
     ];
     const match = files.find((file) => file.storedName === storedName);
     if (match) return match.originalName;
   }
   return '';
+}
+
+function findCoverImage(storedName) {
+  for (const row of listFiles.all()) {
+    const match = normalizeStoredFiles(row.cover_image_json).find((file) => file.storedName === storedName);
+    if (match) return match;
+  }
+  return null;
+}
+
+function normalizeStoredFiles(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed) return [];
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [];
+  }
 }
 
 function ensureSubmissionColumn(name, definition) {
@@ -771,6 +871,8 @@ function buildPublicFeatured(submission) {
   return {
     id: submission.id,
     title: submission.title,
+    image: submission.coverImage?.url || '/assets/thoi-dai-logo.png',
+    coverImage: submission.coverImage,
     participantName: submission.participantName,
     department: submission.department,
     week: submission.week,

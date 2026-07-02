@@ -301,6 +301,12 @@ type PublicPromptItem = {
 type PublicFeaturedSubmission = {
   id: string;
   title: string;
+  image: string;
+  coverImage?: {
+    url: string;
+    originalName: string;
+    generated?: boolean;
+  } | null;
   participantName: string;
   department: string;
   week: string;
@@ -534,8 +540,10 @@ type SubmitStatus =
 
 const maxEvidenceFiles = 5;
 const maxSubmissionFiles = 3;
+const maxCoverImages = 1;
 const maxEvidenceFileSizeMb = 25;
 const maxEvidenceFileSizeBytes = maxEvidenceFileSizeMb * 1024 * 1024;
+const coverImageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
 const initialWorkflowStep: WorkflowStep = { content: '', tools: '', prompt: '', response: '' };
 
 const initialSubmissionForm: SubmissionFormState = {
@@ -587,9 +595,11 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([initialWorkflowStep]);
   const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
   const [submissionFileInputKey, setSubmissionFileInputKey] = useState(0);
   const [evidenceFileInputKey, setEvidenceFileInputKey] = useState(0);
+  const [coverImageInputKey, setCoverImageInputKey] = useState(0);
 
   function updateField<Key extends keyof SubmissionFormState>(field: Key, value: SubmissionFormState[Key]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -618,6 +628,13 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
     const selectedFiles = Array.from(event.target.files ?? []);
     const errors = validateUploadedFiles(selectedFiles, maxEvidenceFiles, 'file minh chứng');
     setEvidenceFiles(selectedFiles.slice(0, maxEvidenceFiles));
+    setStatus(errors.length ? { state: 'error', message: errors.join(' ') } : { state: 'idle' });
+  }
+
+  function handleCoverImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const errors = validateCoverImageFiles(selectedFiles);
+    setCoverImageFile(selectedFiles[0] || null);
     setStatus(errors.length ? { state: 'error', message: errors.join(' ') } : { state: 'idle' });
   }
 
@@ -657,6 +674,9 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
     for (const file of evidenceFiles) {
       payload.append('evidenceFiles', file);
     }
+    if (coverImageFile) {
+      payload.append('coverImage', coverImageFile);
+    }
 
     try {
       const response = await fetch('/api/submissions', {
@@ -673,8 +693,10 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
       setWorkflowSteps([{ ...initialWorkflowStep }]);
       setSubmissionFiles([]);
       setEvidenceFiles([]);
+      setCoverImageFile(null);
       setSubmissionFileInputKey((current) => current + 1);
       setEvidenceFileInputKey((current) => current + 1);
+      setCoverImageInputKey((current) => current + 1);
       setStatus({
         state: 'success',
         receiptId: result.id,
@@ -776,6 +798,17 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
               />
               <small>Tối đa {maxSubmissionFiles} file bài dự thi, mỗi file không quá {maxEvidenceFileSizeMb}MB.</small>
             </label>
+            <label className="formField full coverImageInput">
+              <span>Ảnh đại diện bài dự thi</span>
+              <input
+                key={coverImageInputKey}
+                name="coverImage"
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp"
+                onChange={handleCoverImageChange}
+              />
+              <small>Không bắt buộc. Tự tạo ảnh đại diện từ file bài dự thi nếu không upload ảnh.</small>
+            </label>
             <label className="formField full">
               <span>Các công cụ AI sử dụng <b>*</b></span>
               <input name="aiTools" value={form.aiTools} onChange={(event) => updateField('aiTools', event.target.value)} placeholder="Ví dụ: ChatGPT, Gemini, Claude, Canva..." />
@@ -841,6 +874,10 @@ function SubmitPage({ navigate }: { navigate: (href: string) => void }) {
 
           {submissionFiles.length ? (
             <FileList title="File bài dự thi đã chọn" files={submissionFiles} />
+          ) : null}
+
+          {coverImageFile ? (
+            <FileList title="Ảnh đại diện đã chọn" files={[coverImageFile]} />
           ) : null}
 
           {evidenceFiles.length ? (
@@ -929,6 +966,17 @@ function validateUploadedFiles(files: File[], limit: number, label: string) {
   }
   if (files.some((file) => file.size > maxEvidenceFileSizeBytes)) {
     errors.push(`Mỗi file không được vượt quá ${maxEvidenceFileSizeMb}MB.`);
+  }
+  return errors;
+}
+
+function validateCoverImageFiles(files: File[]) {
+  const errors = validateUploadedFiles(files, maxCoverImages, 'ảnh đại diện bài dự thi');
+  if (files.some((file) => {
+    const lowerName = file.name.toLowerCase();
+    return !coverImageExtensions.some((extension) => lowerName.endsWith(extension));
+  })) {
+    errors.push('Ảnh đại diện chỉ hỗ trợ JPG, PNG hoặc WEBP.');
   }
   return errors;
 }
@@ -1227,6 +1275,7 @@ function FeaturedPage({ navigate }: { navigate: (href: string) => void }) {
         <div className="cardGrid two">
           {filtered.map((submission) => (
             <article key={submission.id} className="card submissionCard approvedSubmissionCard">
+              <img className="approvedSubmissionImage" src={submission.image || '/assets/thoi-dai-logo.png'} alt={`Ảnh đại diện bài dự thi ${submission.title}`} loading="lazy" />
               <div className="cardBody">
                 <div className="cardMeta">
                   <Badge tone="red">Đã duyệt</Badge>
@@ -1796,6 +1845,9 @@ function AdminPage() {
           <div className="adminSubmissionList">
             {submissions.map((submission) => (
               <article key={submission.id} className="card adminSubmissionCard">
+                {submission.coverImage?.url ? (
+                  <img className="adminSubmissionCover" src={submission.coverImage.url} alt={`Ảnh đại diện bài dự thi ${submission.title}`} loading="lazy" />
+                ) : null}
                 <div className="cardMeta">
                   <Badge tone="red">{submission.id}</Badge>
                   <span>{formatDateTime(submission.createdAt)}</span>

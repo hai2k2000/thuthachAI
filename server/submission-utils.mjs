@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import path from 'node:path';
 
 const textFields = [
   'participantName',
@@ -53,9 +54,13 @@ const csvHeaders = [
   'featuredStatus',
   'score',
   'judgeNote',
+  'coverImage',
   'submissionFiles',
   'evidenceFiles',
 ];
+
+const coverImageExtensions = new Set(['.jpeg', '.jpg', '.png', '.webp']);
+const coverImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export function normalizeSubmissionFields(raw = {}) {
   const normalized = {};
@@ -75,6 +80,9 @@ export function validateSubmissionFields(fields, files = []) {
   const evidenceFiles = Array.isArray(files)
     ? files
     : files.evidenceFiles ?? [];
+  const coverImages = Array.isArray(files)
+    ? []
+    : normalizeFileList(files.coverImage);
 
   for (const [field, message] of requiredFields) {
     if (!fields[field]) {
@@ -88,6 +96,13 @@ export function validateSubmissionFields(fields, files = []) {
 
   if (!Array.isArray(evidenceFiles) || evidenceFiles.filter((file) => Number(file?.size ?? 0) > 0).length === 0) {
     errors.push('Can tai len it nhat mot file minh chung.');
+  }
+
+  if (coverImages.length > 1) {
+    errors.push('Chi duoc tai len mot anh dai dien bai du thi.');
+  }
+  if (coverImages.some((file) => !isCoverImageFile(file))) {
+    errors.push('Anh dai dien chi ho tro JPG, PNG hoac WEBP.');
   }
 
   return { ok: errors.length === 0, errors };
@@ -126,6 +141,7 @@ export function formatSubmissionsCsv(submissions) {
       submission.featuredStatus,
       submission.score,
       submission.judgeNote,
+      formatCoverImage(submission.coverImage),
       formatFileList(submission.submissionFiles ?? []),
       formatFileList(submission.evidenceFiles ?? []),
     ]);
@@ -144,6 +160,7 @@ export function mapSubmissionRow(row, { publicBaseUrl = '', token = '' } = {}) {
     downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName, token),
   }));
   const workflowSteps = JSON.parse(row.workflow_steps_json || '[]');
+  const coverImage = parseCoverImage(row.cover_image_json, { publicBaseUrl });
 
   return {
     id: row.id,
@@ -169,6 +186,7 @@ export function mapSubmissionRow(row, { publicBaseUrl = '', token = '' } = {}) {
     featuredStatus: row.featured_status || 'pending',
     score: Number(row.score || 0),
     judgeNote: row.judge_note || '',
+    coverImage,
     submissionFiles,
     evidenceFiles,
     files: [...submissionFiles, ...evidenceFiles],
@@ -182,6 +200,42 @@ export function buildDownloadUrl(publicBaseUrl, storedName, token) {
   return `${base}/api/submissions/files/${encodedName}?token=${encodedToken}`;
 }
 
+export function buildCoverImageUrl(publicBaseUrl, storedName) {
+  const base = String(publicBaseUrl || '').replace(/\/$/, '');
+  const encodedName = encodeURIComponent(storedName);
+  return `${base}/api/submissions/covers/${encodedName}`;
+}
+
+export function createGeneratedCoverSvg(fields = {}, sourceFile = {}) {
+  const titleLines = wrapSvgText(fields.title || 'Bài dự thi Thử thách AI', 34, 3);
+  const metaLines = [
+    fields.participantName || 'Người dự thi',
+    fields.challengeGroup || fields.department || 'Thử thách AI',
+  ].filter(Boolean);
+  const problemLines = wrapSvgText(fields.problem || fields.processSummary || 'Ảnh đại diện được tự tạo từ file bài dự thi.', 54, 4);
+  const sourceName = sourceFile.originalName || sourceFile.filename || 'File bài dự thi';
+  const titleTspans = titleLines.map((line, index) => `<tspan x="72" dy="${index === 0 ? 0 : 58}">${escapeXml(line)}</tspan>`).join('');
+  const problemTspans = problemLines.map((line, index) => `<tspan x="72" dy="${index === 0 ? 0 : 34}">${escapeXml(line)}</tspan>`).join('');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Ảnh đại diện bài dự thi">
+  <rect width="1200" height="675" fill="#fff7f7"/>
+  <rect x="32" y="32" width="1136" height="611" rx="22" fill="#ffffff" stroke="#f4b4b8" stroke-width="3"/>
+  <rect x="72" y="72" width="196" height="42" rx="21" fill="#ee2128"/>
+  <text x="94" y="100" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff">Thử thách AI</text>
+  <text x="72" y="190" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="#23191a">${titleTspans}</text>
+  <text x="72" y="372" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#ee2128">${escapeXml(metaLines.join(' · '))}</text>
+  <text x="72" y="432" font-family="Arial, sans-serif" font-size="28" fill="#4b3b3d">${problemTspans}</text>
+  <rect x="72" y="574" width="1056" height="1" fill="#f4b4b8"/>
+  <text x="72" y="616" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#6b5b5d">Tự tạo ảnh đại diện từ file bài dự thi: ${escapeXml(sourceName)}</text>
+</svg>`;
+}
+
+export function isCoverImageFile(file = {}) {
+  const extension = path.extname(file.originalname || file.filename || '').toLowerCase();
+  const mimeType = String(file.mimetype || '').toLowerCase();
+  return coverImageExtensions.has(extension) || coverImageMimeTypes.has(mimeType);
+}
+
 function formatFileList(files) {
   return files
     .map((file) => {
@@ -190,6 +244,32 @@ function formatFileList(files) {
       return `${file.originalName}${size}${url}`;
     })
     .join(' | ');
+}
+
+function formatCoverImage(coverImage) {
+  if (!coverImage) return '';
+  const size = coverImage.size ? ` (${formatBytes(coverImage.size)})` : '';
+  const url = coverImage.url ? `: ${coverImage.url}` : '';
+  return `${coverImage.originalName || 'Anh dai dien'}${size}${url}`;
+}
+
+function parseCoverImage(value, { publicBaseUrl = '' } = {}) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed?.storedName) return null;
+    return {
+      ...parsed,
+      url: buildCoverImageUrl(publicBaseUrl, parsed.storedName),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFileList(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
 function formatBytes(value) {
@@ -204,6 +284,34 @@ function escapeCsvCell(value) {
   const text = String(value ?? '');
   if (!/[",\n\r]/.test(text)) return text;
   return `"${text.replaceAll('"', '""')}"`;
+}
+
+function escapeXml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+function wrapSvgText(value, maxLength, maxLines) {
+  const words = String(value || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxLength && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+    if (lines.length === maxLines) break;
+  }
+  if (current && lines.length < maxLines) lines.push(current);
+  if (!lines.length) lines.push('Bài dự thi Thử thách AI');
+  return lines;
 }
 
 function normalizeWorkflowSteps(value) {

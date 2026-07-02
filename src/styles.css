@@ -521,6 +521,11 @@ img {
   object-fit: cover;
 }
 
+.approvedSubmissionImage {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
 .cardBody {
   display: grid;
   gap: 14px;
@@ -2179,6 +2184,15 @@ td {
 .adminSubmissionCard {
   display: grid;
   gap: 16px;
+}
+
+.adminSubmissionCover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .adminFiles,

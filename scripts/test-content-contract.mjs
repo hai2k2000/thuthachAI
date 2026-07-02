@@ -100,6 +100,10 @@ for (const englishBadge of ['AI Starter', 'Prompt Builder', 'Workflow Maker', 'A
   assert(!`${data}\n${app}`.includes(englishBadge), `Badge labels must be Vietnamese, found: ${englishBadge}`);
 }
 
+for (const coverImageHook of ['coverImage', 'Ảnh đại diện bài dự thi', 'coverImageInput', '/api/submissions/covers/:storedName', 'Tự tạo ảnh đại diện từ file bài dự thi']) {
+  assert(`${app}\n${server}\n${components}`.includes(coverImageHook), `Missing submission cover image hook: ${coverImageHook}`);
+}
+
 const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
 assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
 assert(styles.includes('.headerActions .ghostButton'), 'Header must compact secondary actions on medium screens');
