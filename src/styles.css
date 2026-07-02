@@ -66,24 +66,25 @@ img {
   width: min(100%, var(--max));
   min-height: 80px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   text-decoration: none;
+  flex: 0 0 auto;
   min-width: 0;
 }
 
 .brandLogo {
-  width: 142px;
-  min-width: 142px;
+  width: 128px;
+  min-width: 128px;
   display: block;
 }
 
@@ -102,15 +103,18 @@ img {
 
 .brand b {
   color: var(--primary);
-  font-size: 21px;
+  font-size: 20px;
   white-space: nowrap;
 }
 
 .desktopNav {
   display: flex;
   align-items: center;
-  gap: 22px;
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: clamp(10px, 1.2vw, 18px);
   margin-left: auto;
+  min-width: 0;
 }
 
 .desktopNav a,
@@ -127,6 +131,7 @@ img {
   align-items: center;
   border-bottom: 2px solid transparent;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .desktopNav a:hover,
@@ -138,7 +143,13 @@ img {
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.headerActions .smallButton {
+  padding-inline: 14px;
+  white-space: nowrap;
 }
 
 .loginButton .material-symbols-outlined {

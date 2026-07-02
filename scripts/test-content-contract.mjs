@@ -88,6 +88,10 @@ for (const challengeCardHook of ['challengeGroupBadge', 'targetGroup']) {
   assert(`${app}\n${components}\n${styles}`.includes(challengeCardHook), `Missing challenge card group hook: ${challengeCardHook}`);
 }
 
+const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
+assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
+assert(styles.includes('.headerActions .ghostButton'), 'Header must compact secondary actions on medium screens');
+
 for (const countdownLayout of ['countdownGrid', 'countdownUnit', 'countdownValue', 'countdownLabel']) {
   assert(app.includes(countdownLayout), `Missing countdown layout hook: ${countdownLayout}`);
   assert(styles.includes(`.${countdownLayout}`), `Missing countdown style hook: ${countdownLayout}`);
