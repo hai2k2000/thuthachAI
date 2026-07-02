@@ -1341,7 +1341,7 @@ function LeaderboardPage() {
   const visibleLeaderboardItems = visibleItems.map((item) => ({
     ...item,
     week: Number(item.week) || 0,
-    badge: 'AI Starter',
+    badge: 'Người khởi đầu AI',
   }));
   const stats = [
     ['Bài đã chấm điểm', String(items.length)],
@@ -1384,7 +1384,7 @@ function LeaderboardPage() {
         averageScore: item.averageScore,
         featuredSubmission: item.featuredSubmission,
       }))} /> : <EmptyState title="Chưa có điểm phòng/ban" description="Số liệu sẽ tự tổng hợp sau khi có bài được chấm." />}
-      <SectionHeading title="Badge/huy hiệu" />
+      <SectionHeading title="Huy hiệu" />
       <BadgeGrid items={badges} />
     </PageContainer>
   );

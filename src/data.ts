@@ -579,7 +579,7 @@ export const leaderboardItems: LeaderboardItem[] = submissions.map((submission, 
   week: submission.week,
   score: submission.score,
   award: submission.award,
-  badge: ['AI Champion', 'Workflow Maker', 'AI Innovator', 'Prompt Master', 'Prompt Builder', 'AI Ambassador'][index] || 'AI Starter',
+  badge: ['Nhà vô địch AI', 'Người tạo quy trình AI', 'Nhà sáng tạo AI', 'Bậc thầy prompt', 'Người xây dựng prompt', 'Đại sứ AI'][index] || 'Người khởi đầu AI',
   status: index < 3 ? 'Vinh danh' : 'Đã ghi nhận',
 }));
 
@@ -603,13 +603,13 @@ export const aiTools: AITool[] = [
 ];
 
 export const badges: Badge[] = [
-  { name: 'AI Starter', description: 'Hoàn thành thử thách đầu tiên và chia sẻ bài học.', tone: 'soft' },
-  { name: 'Prompt Builder', description: 'Đóng góp prompt có thể dùng lại cho phòng/ban.', tone: 'red' },
-  { name: 'Workflow Maker', description: 'Tạo quy trình AI có khả năng nhân rộng.', tone: 'cyan' },
-  { name: 'AI Innovator', description: 'Có ý tưởng sáng tạo, khác biệt và thực tế.', tone: 'orange' },
-  { name: 'AI Champion', description: 'Dẫn đầu bảng vàng tuần hoặc tổng kết.', tone: 'dark' },
-  { name: 'Prompt Master', description: 'Prompt rõ, hiệu quả, dễ áp dụng cho nhiều nhóm.', tone: 'purple' },
-  { name: 'AI Ambassador', description: 'Lan tỏa cách dùng AI an toàn trong cơ quan.', tone: 'soft' },
+  { name: 'Người khởi đầu AI', description: 'Hoàn thành thử thách đầu tiên và chia sẻ bài học.', tone: 'soft' },
+  { name: 'Người xây dựng prompt', description: 'Đóng góp prompt có thể dùng lại cho phòng/ban.', tone: 'red' },
+  { name: 'Người tạo quy trình AI', description: 'Tạo quy trình AI có khả năng nhân rộng.', tone: 'cyan' },
+  { name: 'Nhà sáng tạo AI', description: 'Có ý tưởng sáng tạo, khác biệt và thực tế.', tone: 'orange' },
+  { name: 'Nhà vô địch AI', description: 'Dẫn đầu bảng vàng tuần hoặc tổng kết.', tone: 'dark' },
+  { name: 'Bậc thầy prompt', description: 'Prompt rõ, hiệu quả, dễ áp dụng cho nhiều nhóm.', tone: 'purple' },
+  { name: 'Đại sứ AI', description: 'Lan tỏa cách dùng AI an toàn trong cơ quan.', tone: 'soft' },
 ];
 
 export const scoringCriteria = [

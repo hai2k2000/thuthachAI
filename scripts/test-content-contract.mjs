@@ -93,6 +93,13 @@ for (const submissionGroupOption of ['Nhóm Phóng viên, Biên tập viên', 'N
 }
 assert(!app.includes('Nhóm nhiệm vụ khác'), 'Submission form must only expose the three official groups');
 
+for (const vietnameseBadge of ['Người khởi đầu AI', 'Người xây dựng prompt', 'Người tạo quy trình AI', 'Nhà sáng tạo AI', 'Nhà vô địch AI', 'Bậc thầy prompt', 'Đại sứ AI']) {
+  assert(`${data}\n${app}`.includes(vietnameseBadge), `Missing Vietnamese badge label: ${vietnameseBadge}`);
+}
+for (const englishBadge of ['AI Starter', 'Prompt Builder', 'Workflow Maker', 'AI Innovator', 'AI Champion', 'Prompt Master', 'AI Ambassador', 'Badge/huy hiệu']) {
+  assert(!`${data}\n${app}`.includes(englishBadge), `Badge labels must be Vietnamese, found: ${englishBadge}`);
+}
+
 const desktopNavStyles = styles.match(/\.desktopNav a\s*{[^}]*}/)?.[0] || '';
 assert(desktopNavStyles.includes('white-space: nowrap;'), 'Desktop nav links must stay on one line');
 assert(styles.includes('.headerActions .ghostButton'), 'Header must compact secondary actions on medium screens');
