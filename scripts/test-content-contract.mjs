@@ -124,6 +124,13 @@ for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'admi
   assert(`${app}\n${styles}`.includes(adminLayoutHook), `Missing standalone admin layout hook: ${adminLayoutHook}`);
 }
 assert(!app.includes('className="adminModuleNav"'), 'Admin content must not duplicate sidebar navigation');
+for (const adminOverviewLink of ['adminQuickLinks', '#admin-submissions', '#admin-scoring', '#admin-users', '#admin-support']) {
+  assert(`${app}\n${styles}`.includes(adminOverviewLink), `Admin overview must summarize numbers and link to module: ${adminOverviewLink}`);
+}
+assert(!app.includes('className="adminOverviewIntro"'), 'Admin overview must stay compact and avoid repeating module descriptions');
+for (const adminPanelRoutingHook of ['activeAdminView', 'adminViewFromHash', "activeAdminView === 'overview'"]) {
+  assert(app.includes(adminPanelRoutingHook), `Admin dashboard must render one module view at a time: ${adminPanelRoutingHook}`);
+}
 
 for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiChallengeCommunityDeviceId', '/api/public/submissions/:id/vote', 'community_votes']) {
   assert(`${app}\n${styles}\n${server}`.includes(communityVoteHook), `Missing community vote hook: ${communityVoteHook}`);

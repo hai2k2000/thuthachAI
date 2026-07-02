@@ -378,6 +378,25 @@ type AdminUser = {
   createdAt: string;
 };
 
+type AdminView = 'overview' | 'submissions' | 'scoring' | 'users' | 'support';
+
+const adminViewAnchors: Record<AdminView, string> = {
+  overview: '#admin-overview',
+  submissions: '#admin-submissions',
+  scoring: '#admin-scoring',
+  users: '#admin-users',
+  support: '#admin-support',
+};
+
+function adminViewFromHash(hash: string): AdminView {
+  const normalized = hash.replace(/^#/, '');
+  if (normalized === 'admin-submissions') return 'submissions';
+  if (normalized === 'admin-scoring') return 'scoring';
+  if (normalized === 'admin-users') return 'users';
+  if (normalized === 'admin-support') return 'support';
+  return 'overview';
+}
+
 function CountdownBanner({ targetDate }: { targetDate: string }) {
   const remaining = useCountdown(targetDate);
   const deadlineLabel = '15:00 - 06/07/2026';
@@ -1491,11 +1510,18 @@ function AdminPage() {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [userForm, setUserForm] = useState({ username: '', displayName: '', role: 'judge', password: '' });
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
+  const [activeAdminView, setActiveAdminView] = useState<AdminView>(() => adminViewFromHash(window.location.hash));
 
   useEffect(() => {
     if (token) {
       void loadAdminData(token);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleHashChange = () => setActiveAdminView(adminViewFromHash(window.location.hash));
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   function updateLoginField(field: keyof typeof loginForm, value: string) {
@@ -1654,6 +1680,20 @@ function AdminPage() {
   const pendingScoringCount = submissions.filter((submission) => submission.reviewStatus !== 'scored').length;
   const scoredCount = submissions.filter((submission) => submission.reviewStatus === 'scored').length;
   const communityVoteTotal = submissions.reduce((total, submission) => total + (submission.communityVoteCount || 0), 0);
+  const adminStats = [
+    { value: String(submissions.length), label: 'Bài dự thi' },
+    { value: String(pendingScoringCount), label: 'Chờ chấm' },
+    { value: String(scoredCount), label: 'Đã chấm', accent: true },
+    { value: String(communityVoteTotal), label: 'Bình chọn' },
+    { value: String(adminUsers.length), label: 'Tài khoản' },
+    { value: String(messages.length), label: 'Hỗ trợ' },
+  ];
+  const adminQuickLinks: Array<{ view: AdminView; href: string; icon: string; label: string; count: string; unit: string }> = [
+    { view: 'submissions', href: adminViewAnchors.submissions, icon: 'folder_open', label: 'Quản lý bài dự thi', count: String(submissions.length), unit: 'bài' },
+    { view: 'scoring', href: adminViewAnchors.scoring, icon: 'grading', label: 'Chấm điểm bài thi', count: String(pendingScoringCount), unit: 'chờ chấm' },
+    { view: 'users', href: adminViewAnchors.users, icon: 'manage_accounts', label: 'Quản trị user', count: String(adminUsers.length), unit: 'user' },
+    { view: 'support', href: adminViewAnchors.support, icon: 'support_agent', label: 'Yêu cầu hỗ trợ', count: String(messages.length), unit: 'yêu cầu' },
+  ];
 
   return (
     <main className="adminApp">
@@ -1664,11 +1704,11 @@ function AdminPage() {
           <strong>Quản trị</strong>
         </a>
         <nav className="adminSidebarNav" aria-label="Điều hướng quản trị">
-          <a href="#admin-overview"><Icon name="dashboard" /> Tổng quan</a>
-          <a href="#admin-submissions"><Icon name="folder_open" /> Quản lý bài dự thi</a>
-          <a href="#admin-scoring"><Icon name="grading" /> Chấm điểm bài thi</a>
-          <a href="#admin-users"><Icon name="manage_accounts" /> Quản trị user</a>
-          <a href="#admin-support"><Icon name="support_agent" /> Yêu cầu hỗ trợ</a>
+          <a className={activeAdminView === 'overview' ? 'isActive' : undefined} href={adminViewAnchors.overview} onClick={() => setActiveAdminView('overview')}><Icon name="dashboard" /> Tổng quan</a>
+          <a className={activeAdminView === 'submissions' ? 'isActive' : undefined} href={adminViewAnchors.submissions} onClick={() => setActiveAdminView('submissions')}><Icon name="folder_open" /> Quản lý bài dự thi</a>
+          <a className={activeAdminView === 'scoring' ? 'isActive' : undefined} href={adminViewAnchors.scoring} onClick={() => setActiveAdminView('scoring')}><Icon name="grading" /> Chấm điểm bài thi</a>
+          <a className={activeAdminView === 'users' ? 'isActive' : undefined} href={adminViewAnchors.users} onClick={() => setActiveAdminView('users')}><Icon name="manage_accounts" /> Quản trị user</a>
+          <a className={activeAdminView === 'support' ? 'isActive' : undefined} href={adminViewAnchors.support} onClick={() => setActiveAdminView('support')}><Icon name="support_agent" /> Yêu cầu hỗ trợ</a>
         </nav>
         <div className="adminSidebarFooter">
           <a href="/">Về trang frontend</a>
@@ -1681,7 +1721,7 @@ function AdminPage() {
             <SectionHeading
               eyebrow="Quản trị"
               title="Dashboard Ban tổ chức"
-              description="Tổng hợp bài dự thi, chấm điểm, duyệt prompt, duyệt bài tiêu biểu và xem yêu cầu hỗ trợ gửi từ website."
+              description="Xem nhanh số liệu chính và đi tới từng phần quản trị."
             />
           </section>
       {!token ? (
@@ -1729,21 +1769,27 @@ function AdminPage() {
 
       {!token ? null : (
         <>
-      <section className="adminOverviewPanel" id="admin-overview">
-        <div className="adminOverviewIntro">
-          <span>Tổng quan hệ thống</span>
-          <h2>Trạng thái cuộc thi</h2>
-          <p>Theo dõi nhanh số bài nộp, tiến độ chấm điểm, bình chọn cộng đồng và tài khoản quản trị.</p>
-        </div>
-        <div className="adminOverviewGrid">
-          <StatCard value={String(submissions.length)} label="Bài dự thi" />
-          <StatCard value={String(pendingScoringCount)} label="Chờ chấm" />
-          <StatCard value={String(scoredCount)} label="Đã chấm" accent />
-          <StatCard value={String(communityVoteTotal)} label="Bình chọn" />
-          <StatCard value={String(adminUsers.length)} label="Tài khoản" />
-        </div>
-      </section>
+      {activeAdminView === 'overview' ? (
+        <section className="adminOverviewPanel" id="admin-overview">
+          <div className="adminOverviewGrid">
+            {adminStats.map((stat) => (
+              <StatCard key={stat.label} value={stat.value} label={stat.label} accent={stat.accent} />
+            ))}
+          </div>
+          <div className="adminQuickLinks" aria-label="Đi nhanh đến các phần quản trị">
+            {adminQuickLinks.map((link) => (
+              <a className="adminQuickLink" href={link.href} key={link.view} onClick={() => setActiveAdminView(link.view)}>
+                <Icon name={link.icon} />
+                <span>{link.label}</span>
+                <strong>{link.count}</strong>
+                <em>{link.unit}</em>
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
+      {activeAdminView === 'submissions' ? (
       <section className="adminSection" id="admin-submissions">
         <SectionHeading title="Quản lý bài dự thi" action={<ResultsCount count={submissions.length} label="bài" />} />
         {submissions.length ? (
@@ -1812,7 +1858,9 @@ function AdminPage() {
           <EmptyState title="Chưa có bài dự thi" description="Bài nộp qua form trên website sẽ hiển thị tại đây sau khi được lưu trên VPS." />
         )}
       </section>
+      ) : null}
 
+      {activeAdminView === 'scoring' ? (
       <section className="adminSection adminScorePanel" id="admin-scoring">
         <SectionHeading title="Chấm điểm bài thi" description="Cập nhật trạng thái chấm, điểm số 0-100 và ghi chú giám khảo cho từng bài dự thi." action={<ResultsCount count={submissions.length} label="bài" />} />
         {submissions.length ? (
@@ -1857,7 +1905,9 @@ function AdminPage() {
           <EmptyState title="Chưa có bài để chấm" description="Khi có bài dự thi mới, bảng chấm điểm sẽ hiển thị tại đây." />
         )}
       </section>
+      ) : null}
 
+      {activeAdminView === 'users' ? (
       <section className="adminSection adminUserPanel" id="admin-users">
         <SectionHeading title="Quản trị tài khoản" description="Tạo tài khoản cho Ban tổ chức, giám khảo hoặc người chỉ xem dữ liệu." action={<ResultsCount count={adminUsers.length} label="user" />} />
         <div className="adminUserLayout">
@@ -1922,7 +1972,9 @@ function AdminPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {activeAdminView === 'support' ? (
       <section className="adminSection" id="admin-support">
         <SectionHeading title="Yêu cầu hỗ trợ" action={<ResultsCount count={messages.length} label="yêu cầu" />} />
         {messages.length ? (
@@ -1956,6 +2008,7 @@ function AdminPage() {
           <EmptyState title="Chưa có yêu cầu hỗ trợ" description="Các phản ánh gửi từ form Liên hệ sẽ được lưu tại đây." />
         )}
       </section>
+      ) : null}
         </>
       )}
         </div>

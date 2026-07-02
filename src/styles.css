@@ -1991,6 +1991,12 @@ td {
   background: #fff4f4;
 }
 
+.adminSidebarNav a.isActive {
+  border-color: var(--primary);
+  background: #fff4f4;
+  color: var(--primary);
+}
+
 .adminSidebarFooter {
   display: grid;
   gap: 8px;
@@ -2085,43 +2091,72 @@ td {
 
 .adminOverviewPanel {
   display: grid;
-  gap: 18px;
+  gap: 20px;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: #fff;
 }
 
-.adminOverviewIntro {
-  display: grid;
-  gap: 4px;
-}
-
-.adminOverviewIntro span {
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.adminOverviewIntro h2,
-.adminOverviewIntro p {
-  margin: 0;
-}
-
-.adminOverviewIntro h2 {
-  font-size: 28px;
-  line-height: 1.15;
-}
-
-.adminOverviewIntro p {
-  color: var(--muted);
-}
-
 .adminOverviewGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 14px;
+}
+
+.adminQuickLinks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adminQuickLink {
+  min-height: 124px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon label"
+    "count count"
+    "unit unit";
+  align-content: start;
+  gap: 8px 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.adminQuickLink:hover {
+  border-color: var(--primary-soft);
+  background: #fff7f7;
+}
+
+.adminQuickLink .material-symbols-outlined {
+  grid-area: icon;
+  color: var(--primary);
+}
+
+.adminQuickLink span {
+  grid-area: label;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.adminQuickLink strong {
+  grid-area: count;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.adminQuickLink em {
+  grid-area: unit;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .adminTokenPanel {
@@ -2133,7 +2168,7 @@ td {
 }
 
 .adminSection {
-  margin-top: 34px;
+  margin-top: 0;
 }
 
 .adminSubmissionList {
@@ -2445,6 +2480,10 @@ td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .adminQuickLinks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .adminSidebarFooter {
     margin-top: 0;
   }
@@ -2497,6 +2536,10 @@ td {
 
   .heroCopy p {
     font-size: 17px;
+  }
+
+  .adminQuickLinks {
+    grid-template-columns: 1fr;
   }
 
   .floatingCard {
