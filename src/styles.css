@@ -1145,7 +1145,12 @@ img {
 .searchInput input,
 .selectFilter select,
 .contactForm input,
-.contactForm textarea {
+.contactForm textarea,
+.forumThreadForm input,
+.forumThreadForm select,
+.forumThreadForm textarea,
+.forumReplyForm input,
+.forumReplyForm textarea {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--border);
@@ -2021,6 +2026,212 @@ td {
   color: var(--muted);
 }
 
+.forumPage {
+  display: grid;
+  gap: 28px;
+}
+
+.forumHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: center;
+  padding: 32px;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.forumHero .sectionHeading {
+  margin-bottom: 18px;
+}
+
+.forumHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.forumStats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.forumStats div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--primary-soft);
+  border-radius: var(--radius-sm);
+  background: #fff4f4;
+}
+
+.forumStats strong {
+  color: var(--primary);
+  font-size: 42px;
+  line-height: 1;
+}
+
+.forumStats span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.forumNotice {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+}
+
+.forumNotice.success {
+  border: 1px solid #b7ead4;
+  background: #f0fff7;
+  color: #0f7a43;
+}
+
+.forumNotice.error {
+  border: 1px solid var(--primary-soft);
+  background: #fff4f4;
+  color: var(--primary);
+}
+
+.forumLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.forumMain,
+.forumThreads,
+.forumThreadCard,
+.forumThreadForm,
+.forumSide {
+  display: grid;
+  gap: 16px;
+}
+
+.forumSide {
+  position: sticky;
+  top: 104px;
+}
+
+.forumThreadCard h3,
+.forumThreadForm h2 {
+  margin: 0;
+  color: var(--primary);
+}
+
+.forumThreadCard p,
+.forumThreadForm p {
+  margin: 0;
+}
+
+.forumThreadHeader,
+.forumThreadMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+}
+
+.forumThreadHeader > span,
+.forumThreadMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.forumThreadHeader .material-symbols-outlined,
+.forumThreadMeta .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.forumReplyList {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.forumReplyItem {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.forumReplyItem div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.forumReplyItem strong {
+  color: var(--text);
+}
+
+.forumReplyItem span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.forumReplyForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.forumReplyForm textarea {
+  grid-column: 1 / -1;
+  resize: vertical;
+}
+
+.forumReplyForm .softButton {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.forumThreadForm {
+  padding: 22px;
+}
+
+.forumThreadForm > .material-symbols-outlined {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: #fff4f4;
+  color: var(--primary);
+}
+
+.forumThreadForm label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.forumThreadForm textarea,
+.forumReplyForm textarea {
+  resize: vertical;
+}
+
 .labBento {
   margin: 48px 0;
   grid-template-columns: minmax(0, 1.6fr) minmax(320px, .9fr);
@@ -2828,6 +3039,8 @@ td {
   .detailGrid,
   .aiNewsHero,
   .aiNewsFeatured,
+  .forumHero,
+  .forumLayout,
   .labBento,
   .adminTokenPanel,
   .adminUserLayout,
@@ -2836,6 +3049,10 @@ td {
   }
 
   .detailSide {
+    position: static;
+  }
+
+  .forumSide {
     position: static;
   }
 
@@ -2962,6 +3179,7 @@ td {
   .cardGrid.four,
   .aiNewsGrid,
   .aiNewsCard,
+  .forumReplyForm,
   .rulesGrid,
   .scoreList,
   .twoColumn,
@@ -3011,6 +3229,19 @@ td {
 
   .aiNewsActions .primaryButton,
   .aiNewsActions .ghostButton {
+    width: 100%;
+  }
+
+  .forumHero {
+    padding: 22px 18px;
+  }
+
+  .forumStats,
+  .forumReplyForm {
+    grid-template-columns: 1fr;
+  }
+
+  .forumReplyForm .softButton {
     width: 100%;
   }
 

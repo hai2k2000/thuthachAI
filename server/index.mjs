@@ -21,6 +21,14 @@ import {
   summarizeCommunityVotes,
 } from './community-votes.mjs';
 import {
+  createForumReplyId,
+  createForumThreadId,
+  mapForumReplyRow,
+  mapForumThreadRow,
+  normalizeForumReplyInput,
+  normalizeForumThreadInput,
+} from './forum-utils.mjs';
+import {
   createGeneratedCoverSvg,
   createSubmissionId,
   formatSubmissionsCsv,
@@ -120,6 +128,31 @@ db.exec(`
     reaction TEXT NOT NULL,
     UNIQUE(submission_id, voter_key)
   );
+
+  CREATE TABLE IF NOT EXISTS forum_threads (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    department TEXT NOT NULL,
+    category TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    ai_tools TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'published'
+  );
+
+  CREATE TABLE IF NOT EXISTS forum_replies (
+    id TEXT PRIMARY KEY,
+    thread_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    department TEXT NOT NULL,
+    content TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'published'
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_forum_threads_created_at ON forum_threads(created_at);
+  CREATE INDEX IF NOT EXISTS idx_forum_replies_thread_id ON forum_replies(thread_id);
 `);
 
 ensureSubmissionColumn('submission_files_json', "TEXT NOT NULL DEFAULT '[]'");
@@ -170,6 +203,9 @@ const listFiles = db.prepare('SELECT submission_files_json, files_json, cover_im
 const findSubmissionById = db.prepare('SELECT * FROM submissions WHERE id = ?');
 const listCommunityVotesBySubmission = db.prepare('SELECT reaction FROM community_votes WHERE submission_id = ?');
 const findCommunityVoteByKey = db.prepare('SELECT id FROM community_votes WHERE submission_id = ? AND voter_key = ?');
+const listForumThreads = db.prepare("SELECT * FROM forum_threads WHERE status = 'published' ORDER BY created_at DESC");
+const findForumThreadById = db.prepare("SELECT * FROM forum_threads WHERE id = ? AND status = 'published'");
+const listForumRepliesByThread = db.prepare("SELECT * FROM forum_replies WHERE thread_id = ? AND status = 'published' ORDER BY created_at ASC");
 const insertCommunityVote = db.prepare(`
   INSERT INTO community_votes (
     id,
@@ -178,6 +214,30 @@ const insertCommunityVote = db.prepare(`
     voter_key,
     reaction
   ) VALUES (?, ?, ?, ?, ?)
+`);
+const insertForumThread = db.prepare(`
+  INSERT INTO forum_threads (
+    id,
+    created_at,
+    author_name,
+    department,
+    category,
+    title,
+    content,
+    ai_tools,
+    status
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
+const insertForumReply = db.prepare(`
+  INSERT INTO forum_replies (
+    id,
+    thread_id,
+    created_at,
+    author_name,
+    department,
+    content,
+    status
+  ) VALUES (?, ?, ?, ?, ?, ?, ?)
 `);
 const updateSubmissionReview = db.prepare(`
   UPDATE submissions
@@ -477,6 +537,65 @@ app.get('/api/public/leaderboard', (_request, response) => {
   }));
   const departments = buildDepartmentScores(rows);
   response.json({ ok: true, items, departments });
+});
+
+app.get('/api/forum/threads', (_request, response) => {
+  response.json({ ok: true, threads: getForumThreads() });
+});
+
+app.post('/api/forum/threads', (request, response) => {
+  const validation = normalizeForumThreadInput(request.body);
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
+    return;
+  }
+
+  const id = createForumThreadId();
+  const createdAt = new Date().toISOString();
+  const thread = validation.thread;
+  insertForumThread.run(
+    id,
+    createdAt,
+    thread.authorName,
+    thread.department,
+    thread.category,
+    thread.title,
+    thread.content,
+    thread.aiTools,
+    'published',
+  );
+  response.status(201).json({
+    ok: true,
+    thread: mapForumThreadRow(findForumThreadById.get(id), []),
+    message: 'Chủ đề đã được đăng lên Diễn đàn AI.',
+  });
+});
+
+app.post('/api/forum/threads/:id/replies', (request, response) => {
+  const threadId = String(request.params.id || '');
+  const existing = findForumThreadById.get(threadId);
+  if (!existing) {
+    response.status(404).json({ ok: false, errors: ['Không tìm thấy chủ đề diễn đàn.'] });
+    return;
+  }
+
+  const validation = normalizeForumReplyInput(request.body);
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
+    return;
+  }
+
+  const id = createForumReplyId();
+  const createdAt = new Date().toISOString();
+  const reply = validation.reply;
+  insertForumReply.run(id, threadId, createdAt, reply.authorName, reply.department, reply.content, 'published');
+  const replies = listForumRepliesByThread.all(threadId).map(mapForumReplyRow);
+  response.status(201).json({
+    ok: true,
+    reply: replies.find((item) => item.id === id),
+    thread: mapForumThreadRow(findForumThreadById.get(threadId), replies),
+    message: 'Phản hồi đã được gửi.',
+  });
 });
 
 app.get('/api/submissions/export.csv', requireAdminToken, (_request, response) => {
@@ -913,4 +1032,11 @@ function buildDepartmentScores(submissions) {
     averageScore: Math.round(item.totalScore / item.submissionCount),
     featuredSubmission: item.featuredSubmission,
   }));
+}
+
+function getForumThreads() {
+  return listForumThreads.all().map((row) => {
+    const replies = listForumRepliesByThread.all(row.id).map(mapForumReplyRow);
+    return mapForumThreadRow(row, replies);
+  });
 }

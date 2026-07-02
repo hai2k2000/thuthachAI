@@ -20,6 +20,7 @@ const requiredRoutes = [
   '/leaderboard',
   '/ai-lab',
   '/ai-news',
+  '/forum',
   '/contact',
   '/admin',
   '/search',
@@ -157,6 +158,10 @@ for (const assistantAnswer of ['Hạn nộp bài tuần 1', 'Cách nộp bài d�
 
 for (const aiNewsHook of ['aiNewsItems', 'Tin tức AI', 'AI trong tòa soạn', 'Cập nhật công cụ AI', 'Góc ứng dụng cuộc thi', 'aiNewsHero', 'aiNewsGrid']) {
   assert(`${data}\n${app}\n${components}\n${styles}`.includes(aiNewsHook), `Missing AI news hook/content: ${aiNewsHook}`);
+}
+
+for (const forumHook of ['Diễn đàn AI', 'forumThreads', 'forumThreadForm', 'forumReplyForm', '/api/forum/threads', '/api/forum/threads/:id/replies', 'AI trong công việc', 'Chia sẻ prompt', 'Trao đổi kinh nghiệm sử dụng AI']) {
+  assert(`${data}\n${app}\n${components}\n${styles}\n${server}`.includes(forumHook), `Missing AI forum hook/content: ${forumHook}`);
 }
 
 console.log('Content contract passed');

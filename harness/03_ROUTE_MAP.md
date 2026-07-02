@@ -12,5 +12,6 @@
 - `/leaderboard`
 - `/ai-lab`
 - `/ai-news`
+- `/forum`
 - `/contact`
 - `/search`

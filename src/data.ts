@@ -135,6 +135,7 @@ export const routeMap = [
   '/leaderboard',
   '/ai-lab',
   '/ai-news',
+  '/forum',
   '/contact',
   '/admin',
   '/search',

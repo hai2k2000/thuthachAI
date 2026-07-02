@@ -126,6 +126,8 @@ function renderRoute(pathname: string, navigate: (href: string) => void, copy: (
       return <AiLabPage />;
     case '/ai-news':
       return <AiNewsPage navigate={navigate} />;
+    case '/forum':
+      return <ForumPage navigate={navigate} />;
     case '/contact':
       return <ContactPage />;
     case '/admin':
@@ -527,6 +529,45 @@ type PublicFeaturedSubmission = {
 type CommunityVoteReaction = 'favorite' | 'useful' | 'creative' | 'applicable' | 'inspiring';
 type CommunityReactions = Record<CommunityVoteReaction, number>;
 
+type ForumReply = {
+  id: string;
+  threadId: string;
+  createdAt: string;
+  authorName: string;
+  department: string;
+  content: string;
+  status: string;
+};
+
+type ForumThread = {
+  id: string;
+  createdAt: string;
+  authorName: string;
+  department: string;
+  category: string;
+  title: string;
+  content: string;
+  aiTools: string;
+  status: string;
+  replyCount: number;
+  replies: ForumReply[];
+};
+
+type ForumThreadForm = {
+  authorName: string;
+  department: string;
+  category: string;
+  title: string;
+  content: string;
+  aiTools: string;
+};
+
+type ForumReplyForm = {
+  authorName: string;
+  department: string;
+  content: string;
+};
+
 const communityDeviceStorageKey = 'aiChallengeCommunityDeviceId';
 const communityVoteOptions: Array<{ id: CommunityVoteReaction; label: string; icon: string }> = [
   { id: 'favorite', label: 'Yêu thích', icon: 'favorite' },
@@ -535,6 +576,22 @@ const communityVoteOptions: Array<{ id: CommunityVoteReaction; label: string; ic
   { id: 'applicable', label: 'Dễ áp dụng', icon: 'task_alt' },
   { id: 'inspiring', label: 'Truyền cảm hứng', icon: 'emoji_objects' },
 ];
+
+const forumCategories = ['AI trong công việc', 'Chia sẻ prompt', 'Hỏi đáp công cụ', 'Kinh nghiệm triển khai'];
+const forumFilterOptions = ['Tất cả', ...forumCategories];
+const initialForumThreadForm: ForumThreadForm = {
+  authorName: '',
+  department: '',
+  category: forumCategories[0],
+  title: '',
+  content: '',
+  aiTools: '',
+};
+const initialForumReplyForm: ForumReplyForm = {
+  authorName: '',
+  department: '',
+  content: '',
+};
 
 function getCommunityDeviceId() {
   try {
@@ -1804,6 +1861,194 @@ function AiNewsPage({ navigate }: { navigate: (href: string) => void }) {
   );
 }
 
+function ForumPage({ navigate }: { navigate: (href: string) => void }) {
+  const [forumThreads, setForumThreads] = useState<ForumThread[]>([]);
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('Tất cả');
+  const [threadForm, setThreadForm] = useState<ForumThreadForm>(initialForumThreadForm);
+  const [replyForms, setReplyForms] = useState<Record<string, ForumReplyForm>>({});
+  const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/forum/threads')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Cannot load forum threads')))
+      .then((data: { threads?: ForumThread[] }) => {
+        if (active) setForumThreads(data.threads ?? []);
+      })
+      .catch(() => {
+        if (active) setStatus({ state: 'error', message: 'Chưa tải được Diễn đàn AI. Vui lòng thử lại sau.' });
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleThreads = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return forumThreads.filter((thread) => {
+      const matchesCategory = activeCategory === 'Tất cả' || thread.category === activeCategory;
+      const matchesKeyword = !keyword || `${thread.title} ${thread.content} ${thread.authorName} ${thread.department} ${thread.aiTools} ${thread.category}`.toLowerCase().includes(keyword);
+      return matchesCategory && matchesKeyword;
+    });
+  }, [activeCategory, forumThreads, query]);
+
+  const replyTotal = forumThreads.reduce((total, thread) => total + thread.replyCount, 0);
+
+  function updateThreadField(field: keyof ForumThreadForm, value: string) {
+    setThreadForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateReplyField(threadId: string, field: keyof ForumReplyForm, value: string) {
+    setReplyForms((current) => ({
+      ...current,
+      [threadId]: { ...(current[threadId] || initialForumReplyForm), [field]: value },
+    }));
+  }
+
+  async function submitForumThread(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus({ state: 'submitting' });
+    try {
+      const response = await fetch('/api/forum/threads', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(threadForm),
+      });
+      const data = await response.json().catch(() => ({} as { thread?: ForumThread; errors?: string[]; message?: string }));
+      if (!response.ok || !data.thread) throw new Error(data.errors?.join(' ') || 'Không thể đăng chủ đề diễn đàn.');
+
+      setForumThreads((current) => [data.thread as ForumThread, ...current.filter((thread) => thread.id !== data.thread?.id)]);
+      setThreadForm(initialForumThreadForm);
+      setStatus({ state: 'success', receiptId: data.thread.id, message: data.message || 'Chủ đề đã được đăng.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể đăng chủ đề diễn đàn.' });
+    }
+  }
+
+  async function submitForumReply(threadId: string, event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = replyForms[threadId] || initialForumReplyForm;
+    setStatus({ state: 'submitting' });
+    try {
+      const response = await fetch(`/api/forum/threads/${encodeURIComponent(threadId)}/replies`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json().catch(() => ({} as { thread?: ForumThread; errors?: string[]; message?: string }));
+      if (!response.ok || !data.thread) throw new Error(data.errors?.join(' ') || 'Không thể gửi phản hồi.');
+
+      setForumThreads((current) => current.map((thread) => thread.id === threadId ? data.thread as ForumThread : thread));
+      setReplyForms((current) => ({
+        ...current,
+        [threadId]: { authorName: form.authorName, department: form.department, content: '' },
+      }));
+      setStatus({ state: 'success', receiptId: threadId, message: data.message || 'Phản hồi đã được gửi.' });
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể gửi phản hồi.' });
+    }
+  }
+
+  return (
+    <PageContainer className="forumPage">
+      <Breadcrumb items={[{ label: 'Trang chủ', href: '/' }, { label: 'Diễn đàn AI' }]} navigate={navigate} />
+      <section className="forumHero">
+        <div>
+          <SectionHeading
+            eyebrow="Diễn đàn AI"
+            title="Trao đổi kinh nghiệm sử dụng AI"
+            description="Không gian để mọi người đặt câu hỏi, chia sẻ prompt, kể lại cách dùng công cụ AI trong công việc và học nhanh từ kinh nghiệm của đồng nghiệp."
+          />
+          <div className="forumHeroActions">
+            <AppLink href="/prompts" navigate={navigate} className="ghostButton"><Icon name="terminal" /> Kho Prompt</AppLink>
+            <AppLink href="/ai-news" navigate={navigate} className="ghostButton"><Icon name="newspaper" /> Tin tức AI</AppLink>
+          </div>
+        </div>
+        <aside className="forumStats">
+          <div><strong>{forumThreads.length}</strong><span>chủ đề</span></div>
+          <div><strong>{replyTotal}</strong><span>phản hồi</span></div>
+        </aside>
+      </section>
+
+      {status.state === 'success' ? <p className="forumNotice success" role="status">{status.message}</p> : null}
+      {status.state === 'error' ? <p className="forumNotice error" role="alert">{status.message}</p> : null}
+
+      <section className="forumLayout">
+        <div className="forumMain">
+          <FilterPanel>
+            <SearchInput value={query} onChange={setQuery} placeholder="Tìm theo chủ đề, công cụ, người chia sẻ..." />
+            <SelectFilter label="Chủ đề" value={activeCategory} options={forumFilterOptions} onChange={setActiveCategory} />
+          </FilterPanel>
+          <SectionHeading title="Thảo luận mới nhất" action={<ResultsCount count={visibleThreads.length} label="chủ đề" />} />
+          <div className="forumThreads">
+            {loading ? <EmptyState title="Đang tải diễn đàn" description="Danh sách thảo luận sẽ hiển thị trong giây lát." /> : null}
+            {!loading && visibleThreads.length ? visibleThreads.map((thread) => {
+              const replyForm = replyForms[thread.id] || initialForumReplyForm;
+              return (
+                <article className="card forumThreadCard" key={thread.id}>
+                  <div className="forumThreadHeader">
+                    <Badge tone="red">{thread.category}</Badge>
+                    <span><Icon name="forum" /> {thread.replyCount} phản hồi</span>
+                  </div>
+                  <h3>{thread.title}</h3>
+                  <p>{thread.content}</p>
+                  <div className="forumThreadMeta">
+                    <span><Icon name="person" /> {thread.authorName}</span>
+                    <span><Icon name="apartment" /> {thread.department || 'Chưa ghi phòng/ban'}</span>
+                    <span><Icon name="schedule" /> {formatDateTime(thread.createdAt)}</span>
+                    {thread.aiTools ? <span><Icon name="psychology" /> {thread.aiTools}</span> : null}
+                  </div>
+                  {thread.replies.length ? (
+                    <div className="forumReplyList">
+                      {thread.replies.map((reply) => (
+                        <article className="forumReplyItem" key={reply.id}>
+                          <div>
+                            <strong>{reply.authorName}</strong>
+                            <span>{reply.department || 'Chưa ghi phòng/ban'} · {formatDateTime(reply.createdAt)}</span>
+                          </div>
+                          <p>{reply.content}</p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                  <form className="forumReplyForm" onSubmit={(event) => submitForumReply(thread.id, event)}>
+                    <input value={replyForm.authorName} onChange={(event) => updateReplyField(thread.id, 'authorName', event.target.value)} placeholder="Họ tên" />
+                    <input value={replyForm.department} onChange={(event) => updateReplyField(thread.id, 'department', event.target.value)} placeholder="Phòng/ban" />
+                    <textarea value={replyForm.content} onChange={(event) => updateReplyField(thread.id, 'content', event.target.value)} placeholder="Chia sẻ thêm kinh nghiệm hoặc câu trả lời..." rows={3} />
+                    <button type="submit" className="softButton" disabled={status.state === 'submitting'}><Icon name="reply" /> Gửi phản hồi</button>
+                  </form>
+                </article>
+              );
+            }) : null}
+            {!loading && !visibleThreads.length ? <EmptyState title="Chưa có thảo luận phù hợp" description="Hãy thử đổi bộ lọc hoặc mở chủ đề đầu tiên cho mọi người cùng trao đổi." /> : null}
+          </div>
+        </div>
+
+        <aside className="forumSide">
+          <form className="card forumThreadForm" onSubmit={submitForumThread}>
+            <Icon name="forum" />
+            <h2>Mở chủ đề mới</h2>
+            <label>Họ tên<input value={threadForm.authorName} onChange={(event) => updateThreadField('authorName', event.target.value)} placeholder="Nguyễn Văn A" /></label>
+            <label>Phòng/ban<input value={threadForm.department} onChange={(event) => updateThreadField('department', event.target.value)} placeholder="Ban Nội dung số" /></label>
+            <label>Nhóm nội dung<select value={threadForm.category} onChange={(event) => updateThreadField('category', event.target.value)}>
+              {forumCategories.map((category) => <option key={category}>{category}</option>)}
+            </select></label>
+            <label>Tiêu đề<input value={threadForm.title} onChange={(event) => updateThreadField('title', event.target.value)} placeholder="Ví dụ: Prompt tóm tắt tài liệu dài" /></label>
+            <label>Công cụ AI đã dùng<input value={threadForm.aiTools} onChange={(event) => updateThreadField('aiTools', event.target.value)} placeholder="ChatGPT, Gemini, Canva..." /></label>
+            <label>Nội dung chia sẻ<textarea value={threadForm.content} onChange={(event) => updateThreadField('content', event.target.value)} rows={6} placeholder="Mô tả vấn đề, cách làm, prompt hoặc kinh nghiệm rút ra" /></label>
+            <button type="submit" className="primaryButton" disabled={status.state === 'submitting'}><Icon name="send" /> Đăng chủ đề</button>
+          </form>
+        </aside>
+      </section>
+    </PageContainer>
+  );
+}
+
 function ContactPage() {
   const [form, setForm] = useState({ name: '', department: '', email: '', message: '', attachment: '' });
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
@@ -2414,6 +2659,7 @@ function SearchPage({ navigate }: { navigate: (href: string) => void }) {
     const items = [
       ...challenges.map((challenge) => ({ title: challenge.title, type: 'Thử thách', description: challenge.description, tags: [challenge.targetGroup, `Tuần ${challenge.week}`], href: `/challenges/${challenge.id}` })),
       ...aiNewsItems.map((item) => ({ title: item.title, type: 'Tin tức AI', description: item.summary, tags: [item.category, ...item.tags], href: '/ai-news' })),
+      { title: 'Diễn đàn AI', type: 'Cộng đồng', description: 'Trao đổi kinh nghiệm sử dụng AI, chia sẻ prompt và hỏi đáp công cụ giữa các phòng/ban.', tags: ['diễn đàn', 'AI trong công việc', 'Chia sẻ prompt'], href: '/forum' },
       { title: 'Thể lệ cuộc thi', type: 'Thể lệ', description: 'Tiêu chí chấm điểm, giải thưởng, thời gian và tổ chức thực hiện.', tags: ['100 điểm', 'giải thưởng'], href: '/rules' },
       { title: 'Thông báo mở tuần 1', type: 'Tin cập nhật', description: 'Tuần 1 nhận bài đến 15h00 ngày 06/7/2026.', tags: ['deadline', 'tuần 1'], href: '/challenges' },
       { title: 'Nộp bài dự thi', type: 'Form', description: 'Gửi nội dung bài dự thi, nhật ký tác nghiệp và upload file trực tiếp.', tags: ['nộp bài', 'upload'], href: '/submit' },
