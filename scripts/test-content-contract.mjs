@@ -164,9 +164,12 @@ assert(assistantQuickQuestionCount === 2, `Assistant bot must expose exactly 2 s
 for (const assistantTypingHook of ['typingMessageId', 'assistantTypingBubble', 'assistantTypingDots', 'assistantTypingDot']) {
   assert(`${app}\n${styles}`.includes(assistantTypingHook), `Missing assistant typing effect hook: ${assistantTypingHook}`);
 }
-assert(styles.includes('width: min(460px'), 'Assistant chat panel must be wider for more comfortable chat space');
+assert(styles.includes('width: min(520px'), 'Assistant chat panel must be wider for more comfortable chat space');
 const assistantQuickButtonStyles = styles.match(/\.assistantQuickQuestions button\s*{[^}]*}/)?.[0] || '';
-assert(assistantQuickButtonStyles.includes('min-height: 28px') && assistantQuickButtonStyles.includes('font-size: 12px'), 'Assistant quick suggestion buttons must be compact');
+assert(assistantQuickButtonStyles.includes('min-height: 24px') && assistantQuickButtonStyles.includes('font-size: 11px'), 'Assistant quick suggestion buttons must be compact');
+for (const assistantHumanHook of ['assistantBotIdentity', 'assistantBotAvatar', 'assistantPresenceDot', 'assistantMessageAuthor']) {
+  assert(`${app}\n${styles}`.includes(assistantHumanHook), `Assistant chat must feel more natural and human-like: ${assistantHumanHook}`);
+}
 for (const assistantRelatedHook of ['relatedQuestions', 'assistantRelatedQuestions', 'Câu hỏi liên quan']) {
   assert(`${app}\n${styles}`.includes(assistantRelatedHook), `Missing assistant related question hook: ${assistantRelatedHook}`);
 }

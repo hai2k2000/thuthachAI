@@ -3034,15 +3034,16 @@ td {
 }
 
 .assistantBotPanel {
-  width: min(460px, calc(100vw - 32px));
-  max-height: min(700px, calc(100vh - 112px));
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 112px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   overflow: hidden;
   border: 1px solid var(--primary-soft);
-  border-radius: var(--radius);
+  border-radius: 18px;
   background: #fff;
   box-shadow: 0 24px 80px rgba(35, 25, 26, .18);
+  font-size: 13px;
 }
 
 .assistantBotHeader {
@@ -3050,24 +3051,64 @@ td {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px;
+  padding: 14px;
   background: var(--primary);
   color: #fff;
 }
 
-.assistantBotHeader div {
-  display: grid;
-  gap: 2px;
+.assistantBotIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
-.assistantBotHeader span {
+.assistantBotAvatar {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(238, 33, 40, .16);
+}
+
+.assistantBotIdentity > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assistantBotIdentity > div > span {
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.assistantBotHeader strong {
+.assistantBotIdentity strong {
   font-size: 18px;
+  line-height: 1.1;
+}
+
+.assistantBotIdentity small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, .86);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.assistantPresenceDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, .2);
 }
 
 .assistantBotHeader .iconButton {
@@ -3079,32 +3120,46 @@ td {
 .assistantMessages {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 12px;
   overflow: auto;
-  padding: 16px;
-  background: var(--surface);
+  padding: 18px;
+  background: #f7f8fb;
 }
 
 .assistantMessage {
-  max-width: 88%;
+  max-width: 84%;
   display: grid;
-  gap: 8px;
-  padding: 11px 12px;
+  gap: 5px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 18px 18px 18px 6px;
   background: #fff;
+  box-shadow: 0 8px 22px rgba(35, 25, 26, .06);
+}
+
+.assistantMessageAuthor {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: uppercase;
 }
 
 .assistantMessage p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 13.5px;
+  line-height: 1.58;
 }
 
 .assistantMessage.user {
   justify-self: end;
   border-color: var(--primary);
+  border-radius: 18px 18px 6px 18px;
   background: #fff4f4;
+}
+
+.assistantMessage.user .assistantMessageAuthor {
+  color: var(--primary);
 }
 
 .assistantTypingBubble {
@@ -3199,21 +3254,22 @@ td {
 }
 
 .assistantQuickQuestions {
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 5px;
+  padding: 7px 10px;
   border-top: 1px solid var(--border);
   background: #fff;
 }
 
 .assistantQuickQuestions button {
-  min-height: 28px;
-  padding: 5px 8px;
+  min-height: 24px;
+  padding: 4px 7px;
   border: 1px solid var(--primary-soft);
   border-radius: 999px;
   background: #fff;
   color: var(--primary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
+  line-height: 1.15;
   cursor: pointer;
 }
 
@@ -3221,7 +3277,7 @@ td {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
   gap: 8px;
-  padding: 12px 14px 14px;
+  padding: 10px 12px 12px;
   border-top: 1px solid var(--border);
   background: #fff;
 }

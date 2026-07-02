@@ -292,9 +292,13 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
       {open ? (
         <section className="assistantBotPanel">
           <div className="assistantBotHeader">
-            <div>
-              <span>Trợ lý Thử thách AI</span>
-              <strong>Hỏi đáp nhanh</strong>
+            <div className="assistantBotIdentity">
+              <span className="assistantBotAvatar" aria-hidden="true">AI</span>
+              <div>
+                <span>Trợ lý Thử thách AI</span>
+                <strong>Hỏi đáp nhanh</strong>
+                <small><i className="assistantPresenceDot" /> Đang trực</small>
+              </div>
             </div>
             <button type="button" className="iconButton" aria-label="Đóng trợ lý" onClick={() => setOpen(false)}>
               <Icon name="close" />
@@ -305,6 +309,7 @@ function AssistantBot({ navigate }: { navigate: (href: string) => void }) {
               const isTyping = message.id === typingMessageId;
               return (
               <article key={message.id} className={`assistantMessage ${message.role}${isTyping ? ' assistantTypingBubble' : ''}`}>
+                <span className="assistantMessageAuthor">{message.role === 'bot' ? 'Trợ lý' : 'Bạn'}</span>
                 <p>
                   {isTyping ? (
                     <span className="assistantTypingStatus">
