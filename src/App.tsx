@@ -733,8 +733,14 @@ type AdminSubmission = PublicFeaturedSubmission & {
   promptStatus: string;
   featuredStatus: string;
   judgeNote: string;
-  submissionFiles: Array<{ originalName: string; downloadUrl: string; size: number }>;
-  evidenceFiles: Array<{ originalName: string; downloadUrl: string; size: number }>;
+  submissionFiles: AdminFile[];
+  evidenceFiles: AdminFile[];
+};
+
+type AdminFile = {
+  originalName: string;
+  downloadUrl: string;
+  size: number;
 };
 
 type ContactMessage = {
@@ -758,6 +764,7 @@ type AdminUser = {
 };
 
 type AdminView = 'overview' | 'submissions' | 'scoring' | 'users' | 'support';
+type AdminRole = 'admin' | 'judge' | 'viewer' | '';
 
 const adminViewAnchors: Record<AdminView, string> = {
   overview: '#admin-overview',
@@ -774,6 +781,10 @@ function adminViewFromHash(hash: string): AdminView {
   if (normalized === 'admin-users') return 'users';
   if (normalized === 'admin-support') return 'support';
   return 'overview';
+}
+
+function normalizeAdminRole(value: unknown): AdminRole {
+  return value === 'admin' || value === 'judge' || value === 'viewer' ? value : '';
 }
 
 function CountdownBanner({ targetDate }: { targetDate: string }) {
@@ -2322,6 +2333,7 @@ function ContactPage() {
 function AdminPage() {
   const [token, setToken] = useState(() => window.localStorage.getItem('aiChallengeAdminToken') || '');
   const [adminUser, setAdminUser] = useState(() => window.localStorage.getItem('aiChallengeAdminUser') || '');
+  const [adminRole, setAdminRole] = useState<AdminRole>(() => normalizeAdminRole(window.localStorage.getItem('aiChallengeAdminRole')));
   const [loginForm, setLoginForm] = useState({ username: 'admin', password: '' });
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -2332,7 +2344,7 @@ function AdminPage() {
 
   useEffect(() => {
     if (token) {
-      void loadAdminData(token);
+      void loadAdminData(token, adminRole);
     }
   }, []);
 
@@ -2364,18 +2376,21 @@ function AdminPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(loginForm),
       });
-      const data = await response.json().catch(() => ({} as { token?: string; username?: string; errors?: string[] }));
+      const data = await response.json().catch(() => ({} as { token?: string; username?: string; role?: string; errors?: string[] }));
       if (!response.ok || !data.token) {
         throw new Error(data.errors?.join(' ') || 'Không thể đăng nhập quản trị.');
       }
 
       const nextUser = data.username || loginForm.username.trim();
+      const nextRole = normalizeAdminRole(data.role) || 'viewer';
       window.localStorage.setItem('aiChallengeAdminToken', data.token);
       window.localStorage.setItem('aiChallengeAdminUser', nextUser);
+      window.localStorage.setItem('aiChallengeAdminRole', nextRole);
       setToken(data.token);
       setAdminUser(nextUser);
+      setAdminRole(nextRole);
       setLoginForm((current) => ({ ...current, password: '' }));
-      await loadAdminData(data.token);
+      await loadAdminData(data.token, nextRole);
     } catch (error) {
       setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể đăng nhập quản trị.' });
     }
@@ -2384,8 +2399,10 @@ function AdminPage() {
   function handleAdminLogout() {
     window.localStorage.removeItem('aiChallengeAdminToken');
     window.localStorage.removeItem('aiChallengeAdminUser');
+    window.localStorage.removeItem('aiChallengeAdminRole');
     setToken('');
     setAdminUser('');
+    setAdminRole('');
     setSubmissions([]);
     setMessages([]);
     setAdminUsers([]);
@@ -2393,7 +2410,7 @@ function AdminPage() {
     setLoginForm({ username: 'admin', password: '' });
   }
 
-  async function loadAdminData(nextToken = token) {
+  async function loadAdminData(nextToken = token, nextRole = adminRole) {
     if (!nextToken.trim()) {
       setStatus({ state: 'error', message: 'Vui lòng đăng nhập quản trị.' });
       return;
@@ -2401,21 +2418,29 @@ function AdminPage() {
 
     setStatus({ state: 'submitting' });
     try {
-      const [submissionResponse, contactResponse, userResponse] = await Promise.all([
+      const role = normalizeAdminRole(nextRole) || 'viewer';
+      const [submissionResponse, contactResponse] = await Promise.all([
         apiFetch('/api/admin/submissions', { headers: { 'x-admin-token': nextToken } }),
         apiFetch('/api/admin/contact-messages', { headers: { 'x-admin-token': nextToken } }),
-        apiFetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } }),
       ]);
       const submissionData = await submissionResponse.json().catch(() => ({} as { submissions?: AdminSubmission[]; errors?: string[] }));
       const contactData = await contactResponse.json().catch(() => ({} as { messages?: ContactMessage[]; errors?: string[] }));
-      const userData = await userResponse.json().catch(() => ({} as { users?: AdminUser[]; errors?: string[] }));
+      let userData = {} as { users?: AdminUser[]; errors?: string[] };
+      let userResponse: Pick<Response, 'ok'> = { ok: true };
+      if (role === 'admin') {
+        const nextUserResponse = await apiFetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } });
+        userResponse = nextUserResponse;
+        userData = await nextUserResponse.json().catch(() => ({} as { users?: AdminUser[]; errors?: string[] }));
+      }
 
       if (!submissionResponse.ok) throw new Error(submissionData.errors?.join(' ') || 'Không thể tải danh sách bài dự thi.');
       if (!contactResponse.ok) throw new Error(contactData.errors?.join(' ') || 'Không thể tải danh sách liên hệ.');
       if (!userResponse.ok) throw new Error(userData.errors?.join(' ') || 'Không thể tải danh sách tài khoản.');
 
       window.localStorage.setItem('aiChallengeAdminToken', nextToken);
+      window.localStorage.setItem('aiChallengeAdminRole', role);
       setToken(nextToken);
+      setAdminRole(role);
       setSubmissions(submissionData.submissions ?? []);
       setMessages(contactData.messages ?? []);
       setAdminUsers(userData.users ?? []);
@@ -2495,6 +2520,53 @@ function AdminPage() {
     }
   }
 
+  async function downloadAdminCsv() {
+    await downloadAdminBlob('/api/submissions/export.csv', 'ai-challenge-submissions.csv');
+  }
+
+  async function downloadAdminFile(file: AdminFile) {
+    await downloadAdminBlob(file.downloadUrl, file.originalName || 'ai-challenge-file');
+  }
+
+  async function downloadAdminBlob(url: string, filename: string) {
+    if (!token) {
+      setStatus({ state: 'error', message: 'Vui lÃ²ng Ä‘Äƒng nháº­p quáº£n trá»‹.' });
+      return;
+    }
+
+    try {
+      const response = await apiFetch(url, {
+        headers: { 'x-admin-token': token },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({} as { errors?: string[] }));
+        throw new Error(data.errors?.join(' ') || 'KhÃ´ng thá»ƒ táº£i file.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'KhÃ´ng thá»ƒ táº£i file.' });
+    }
+  }
+
+  const canManageUsers = adminRole === 'admin';
+  const canReviewSubmissions = adminRole === 'admin' || adminRole === 'judge';
+  useEffect(() => {
+    if (activeAdminView !== 'users' || canManageUsers) return;
+    setActiveAdminView('overview');
+    if (window.location.hash === adminViewAnchors.users) {
+      window.history.replaceState(null, '', adminViewAnchors.overview);
+    }
+  }, [activeAdminView, canManageUsers]);
+
   const pendingScoringCount = submissions.filter((submission) => submission.reviewStatus !== 'scored').length;
   const scoredCount = submissions.filter((submission) => submission.reviewStatus === 'scored').length;
   const communityVoteTotal = submissions.reduce((total, submission) => total + (submission.communityVoteCount || 0), 0);
@@ -2513,6 +2585,9 @@ function AdminPage() {
     { view: 'support', href: adminViewAnchors.support, icon: 'support_agent', label: 'Yêu cầu hỗ trợ', count: String(messages.length), unit: 'yêu cầu' },
   ];
 
+  const visibleAdminStats = canManageUsers ? adminStats : adminStats.filter((_, index) => index !== 4);
+  const visibleAdminQuickLinks = canManageUsers ? adminQuickLinks : adminQuickLinks.filter((link) => link.view !== 'users');
+
   return (
     <main className="adminApp">
       <aside className="adminSidebar">
@@ -2525,7 +2600,9 @@ function AdminPage() {
           <a className={activeAdminView === 'overview' ? 'isActive' : undefined} href={adminViewAnchors.overview} onClick={() => setActiveAdminView('overview')}><Icon name="dashboard" /> Tổng quan</a>
           <a className={activeAdminView === 'submissions' ? 'isActive' : undefined} href={adminViewAnchors.submissions} onClick={() => setActiveAdminView('submissions')}><Icon name="folder_open" /> Quản lý bài dự thi</a>
           <a className={activeAdminView === 'scoring' ? 'isActive' : undefined} href={adminViewAnchors.scoring} onClick={() => setActiveAdminView('scoring')}><Icon name="grading" /> Chấm điểm bài thi</a>
-          <a className={activeAdminView === 'users' ? 'isActive' : undefined} href={adminViewAnchors.users} onClick={() => setActiveAdminView('users')}><Icon name="manage_accounts" /> Quản trị user</a>
+          {canManageUsers ? (
+            <a className={activeAdminView === 'users' ? 'isActive' : undefined} href={adminViewAnchors.users} onClick={() => setActiveAdminView('users')}><Icon name="manage_accounts" /> Quản trị user</a>
+          ) : null}
           <a className={activeAdminView === 'support' ? 'isActive' : undefined} href={adminViewAnchors.support} onClick={() => setActiveAdminView('support')}><Icon name="support_agent" /> Yêu cầu hỗ trợ</a>
         </nav>
         <div className="adminSidebarFooter">
@@ -2571,10 +2648,10 @@ function AdminPage() {
               <Icon name="refresh" />
               {status.state === 'submitting' ? 'Đang tải...' : 'Tải lại'}
             </button>
-            <a className="ghostButton" href={`/api/submissions/export.csv?token=${encodeURIComponent(token)}`}>
+            <button type="button" className="ghostButton" onClick={downloadAdminCsv}>
               <Icon name="download" />
               Tải CSV
-            </a>
+            </button>
             <button type="button" className="darkButton" onClick={handleAdminLogout}>
               <Icon name="logout" />
               Đăng xuất
@@ -2590,12 +2667,12 @@ function AdminPage() {
       {activeAdminView === 'overview' ? (
         <section className="adminOverviewPanel" id="admin-overview">
           <div className="adminOverviewGrid">
-            {adminStats.map((stat) => (
+            {visibleAdminStats.map((stat) => (
               <StatCard key={stat.label} value={stat.value} label={stat.label} accent={stat.accent} />
             ))}
           </div>
           <div className="adminQuickLinks" aria-label="Đi nhanh đến các phần quản trị">
-            {adminQuickLinks.map((link) => (
+            {visibleAdminQuickLinks.map((link) => (
               <a className="adminQuickLink" href={link.href} key={link.view} onClick={() => setActiveAdminView(link.view)}>
                 <Icon name={link.icon} />
                 <span>{link.label}</span>
@@ -2635,13 +2712,13 @@ function AdminPage() {
                 />
                 <p>{submission.problem}</p>
                 <div className="adminFiles">
-                  <AdminFileGroup title="File bài dự thi" files={submission.submissionFiles} />
-                  <AdminFileGroup title="File minh chứng" files={submission.evidenceFiles} />
+                  <AdminFileGroup title="File bài dự thi" files={submission.submissionFiles} onDownload={downloadAdminFile} />
+                  <AdminFileGroup title="File minh chứng" files={submission.evidenceFiles} onDownload={downloadAdminFile} />
                 </div>
                 <div className="adminControls">
                   <label>
                     <span>Trạng thái chấm</span>
-                    <select name={`reviewStatus-${submission.id}`} value={submission.reviewStatus} onChange={(event) => updateSubmission(submission.id, { reviewStatus: event.target.value })}>
+                    <select name={`reviewStatus-${submission.id}`} value={submission.reviewStatus} disabled={!canReviewSubmissions} onChange={(event) => updateSubmission(submission.id, { reviewStatus: event.target.value })}>
                       <option value="pending">Chờ chấm</option>
                       <option value="reviewing">Đang chấm</option>
                       <option value="scored">Đã chấm</option>
@@ -2649,7 +2726,7 @@ function AdminPage() {
                   </label>
                   <label>
                     <span>Duyệt prompt</span>
-                    <select name={`promptStatus-${submission.id}`} value={submission.promptStatus} onChange={(event) => updateSubmission(submission.id, { promptStatus: event.target.value })}>
+                    <select name={`promptStatus-${submission.id}`} value={submission.promptStatus} disabled={!canReviewSubmissions} onChange={(event) => updateSubmission(submission.id, { promptStatus: event.target.value })}>
                       <option value="pending">Chờ duyệt</option>
                       <option value="approved">Duyệt lên Kho Prompt</option>
                       <option value="rejected">Không hiển thị</option>
@@ -2657,7 +2734,7 @@ function AdminPage() {
                   </label>
                   <label>
                     <span>Bài tiêu biểu</span>
-                    <select name={`featuredStatus-${submission.id}`} value={submission.featuredStatus} onChange={(event) => updateSubmission(submission.id, { featuredStatus: event.target.value })}>
+                    <select name={`featuredStatus-${submission.id}`} value={submission.featuredStatus} disabled={!canReviewSubmissions} onChange={(event) => updateSubmission(submission.id, { featuredStatus: event.target.value })}>
                       <option value="pending">Chờ duyệt</option>
                       <option value="approved">Hiển thị</option>
                       <option value="rejected">Không hiển thị</option>
@@ -2665,12 +2742,12 @@ function AdminPage() {
                   </label>
                   <label>
                     <span>Điểm</span>
-                    <input name={`score-${submission.id}`} type="number" min="0" max="100" defaultValue={submission.score} onBlur={(event) => updateSubmission(submission.id, { score: Number(event.currentTarget.value) } as Partial<AdminSubmission>)} />
+                    <input name={`score-${submission.id}`} type="number" min="0" max="100" defaultValue={submission.score} disabled={!canReviewSubmissions} onBlur={(event) => updateSubmission(submission.id, { score: Number(event.currentTarget.value) } as Partial<AdminSubmission>)} />
                   </label>
                 </div>
                 <label className="formField">
                   <span>Ghi chú giám khảo</span>
-                  <textarea name={`judgeNote-${submission.id}`} rows={3} defaultValue={submission.judgeNote} onBlur={(event) => updateSubmission(submission.id, { judgeNote: event.currentTarget.value })} />
+                  <textarea name={`judgeNote-${submission.id}`} rows={3} defaultValue={submission.judgeNote} disabled={!canReviewSubmissions} onBlur={(event) => updateSubmission(submission.id, { judgeNote: event.currentTarget.value })} />
                 </label>
               </article>
             ))}
@@ -2705,17 +2782,17 @@ function AdminPage() {
                     </td>
                     <td>{submission.participantName}<br /><small>{submission.department}</small></td>
                     <td>
-                      <select name={`scoreReviewStatus-${submission.id}`} value={submission.reviewStatus} onChange={(event) => updateSubmission(submission.id, { reviewStatus: event.target.value })}>
+                       <select name={`scoreReviewStatus-${submission.id}`} value={submission.reviewStatus} disabled={!canReviewSubmissions} onChange={(event) => updateSubmission(submission.id, { reviewStatus: event.target.value })}>
                         <option value="pending">Chờ chấm</option>
                         <option value="reviewing">Đang chấm</option>
                         <option value="scored">Đã chấm</option>
                       </select>
                     </td>
                     <td>
-                      <input name={`scoreTable-${submission.id}`} type="number" min="0" max="100" defaultValue={submission.score} onBlur={(event) => updateSubmission(submission.id, { score: Number(event.currentTarget.value) } as Partial<AdminSubmission>)} />
+                      <input name={`scoreTable-${submission.id}`} type="number" min="0" max="100" defaultValue={submission.score} disabled={!canReviewSubmissions} onBlur={(event) => updateSubmission(submission.id, { score: Number(event.currentTarget.value) } as Partial<AdminSubmission>)} />
                     </td>
                     <td>
-                      <textarea name={`scoreNote-${submission.id}`} rows={2} defaultValue={submission.judgeNote} onBlur={(event) => updateSubmission(submission.id, { judgeNote: event.currentTarget.value })} />
+                      <textarea name={`scoreNote-${submission.id}`} rows={2} defaultValue={submission.judgeNote} disabled={!canReviewSubmissions} onBlur={(event) => updateSubmission(submission.id, { judgeNote: event.currentTarget.value })} />
                     </td>
                   </tr>
                 ))}
@@ -2728,7 +2805,7 @@ function AdminPage() {
       </section>
       ) : null}
 
-      {activeAdminView === 'users' ? (
+      {activeAdminView === 'users' && canManageUsers ? (
       <section className="adminSection adminUserPanel" id="admin-users">
         <SectionHeading title="Quản trị tài khoản" description="Tạo tài khoản cho Ban tổ chức, giám khảo hoặc người chỉ xem dữ liệu." action={<ResultsCount count={adminUsers.length} label="user" />} />
         <div className="adminUserLayout">
@@ -2838,7 +2915,7 @@ function AdminPage() {
   );
 }
 
-function AdminFileGroup({ title, files }: { title: string; files: Array<{ originalName: string; downloadUrl: string; size: number }> }) {
+function AdminFileGroup({ title, files, onDownload }: { title: string; files: AdminFile[]; onDownload: (file: AdminFile) => void }) {
   return (
     <div>
       <strong>{title}</strong>
@@ -2846,7 +2923,7 @@ function AdminFileGroup({ title, files }: { title: string; files: Array<{ origin
         <ul>
           {files.map((file) => (
             <li key={file.downloadUrl}>
-              <a href={file.downloadUrl}>{file.originalName}</a>
+              <button type="button" className="ghostButton" onClick={() => onDownload(file)}>{file.originalName}</button>
               <span>{formatFileSize(file.size)}</span>
             </li>
           ))}

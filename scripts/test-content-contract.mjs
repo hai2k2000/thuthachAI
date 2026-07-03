@@ -152,6 +152,20 @@ for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', 
 for (const adminDashboardHook of ['adminOverviewGrid', 'adminSidebarNav', 'adminScorePanel', 'adminUserPanel', 'adminUserForm', '/api/admin/users']) {
   assert(`${app}\n${styles}\n${server}`.includes(adminDashboardHook), `Missing admin dashboard hook: ${adminDashboardHook}`);
 }
+for (const adminSecurityHook of ['createAdminSessionToken', 'verifyAdminSessionToken', 'requireAdminRole', "requireAdminRole(['admin'])", "requireAdminRole(['admin', 'judge'])"]) {
+  assert(server.includes(adminSecurityHook) || app.includes(adminSecurityHook), `Missing admin RBAC/session hook: ${adminSecurityHook}`);
+}
+for (const adminRevocationHook of ['resolveAdminSessionUser', 'findAdminUserById.get(session.user.id)', "currentUser.status !== 'active'", 'request.adminUser = currentUser']) {
+  assert(server.includes(adminRevocationHook), `Admin RBAC must re-check current user state before authorizing: ${adminRevocationHook}`);
+}
+assert(!server.includes('request.query.token'), 'Admin token must not be accepted in query strings');
+assert(!app.includes('export.csv?token='), 'CSV export must not put admin token in the URL');
+assert(!`${app}\n${server}`.includes('?token=${'), 'Admin file/download URLs must not contain query-string tokens');
+for (const adminDownloadHook of ['downloadAdminCsv', 'downloadAdminFile', 'URL.createObjectURL', "'x-admin-token': token"]) {
+  assert(app.includes(adminDownloadHook), `Admin downloads must use authenticated fetch headers: ${adminDownloadHook}`);
+}
+assert(/canManageUsers\s*\?\s*\(\s*<a className=\{activeAdminView === 'users'/s.test(app), 'User management sidebar link must only render for admin role');
+assert(app.includes("activeAdminView === 'users' && canManageUsers"), 'User management panel must only render for admin role');
 
 for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain', 'adminOverviewPanel']) {
   assert(`${app}\n${styles}`.includes(adminLayoutHook), `Missing standalone admin layout hook: ${adminLayoutHook}`);

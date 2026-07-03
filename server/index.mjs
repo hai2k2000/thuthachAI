@@ -16,6 +16,11 @@ import {
   verifyPassword,
 } from './admin-users.mjs';
 import {
+  createAdminSessionToken,
+  hasAdminRole,
+  verifyAdminSessionToken,
+} from './admin-session.mjs';
+import {
   createVoterKey,
   normalizeCommunityVoteInput,
   summarizeCommunityVotes,
@@ -55,6 +60,7 @@ const maxSubmissionFiles = Number(process.env.MAX_SUBMISSION_FILES || 3);
 const maxCoverImages = 1;
 const port = Number(process.env.PORT || 4310);
 const host = process.env.HOST || '127.0.0.1';
+const adminSessionTtlMs = positiveEnvNumber('ADMIN_SESSION_TTL_MS', 12 * 60 * 60 * 1000);
 const rateLimitStore = createRateLimitStore();
 const adminLoginRateLimit = createConfiguredRateLimit({
   keyPrefix: 'admin-login',
@@ -377,7 +383,16 @@ app.post('/api/admin/login', adminLoginRateLimit, (request, response) => {
       response.status(401).json({ ok: false, errors: ['Sai tai khoan hoac mat khau quan tri.'] });
       return;
     }
-    response.json({ ok: true, token: adminToken, username: user.username, role: user.role });
+    response.json({
+      ok: true,
+      token: createAdminSessionToken({
+        user: toAdminSessionUser(user),
+        secret: adminToken,
+        ttlMs: adminSessionTtlMs,
+      }),
+      username: user.username,
+      role: user.role,
+    });
     return;
   }
 
@@ -386,7 +401,26 @@ app.post('/api/admin/login', adminLoginRateLimit, (request, response) => {
     password: adminPassword,
     token: adminToken,
   });
-  response.status(result.status).json(result.body);
+  if (result.status !== 200) {
+    response.status(result.status).json(result.body);
+    return;
+  }
+
+  const fallbackUser = {
+    id: 'ENV-ADMIN',
+    username: adminUsername,
+    role: 'admin',
+  };
+  response.status(200).json({
+    ok: true,
+    token: createAdminSessionToken({
+      user: fallbackUser,
+      secret: adminToken,
+      ttlMs: adminSessionTtlMs,
+    }),
+    username: fallbackUser.username,
+    role: fallbackUser.role,
+  });
 });
 
 app.post('/api/submissions', submissionsRateLimit, upload.fields([
@@ -492,7 +526,7 @@ app.post('/api/contact', contactRateLimit, (request, response) => {
 app.get('/api/public/prompts', (_request, response) => {
   const prompts = listPublicPrompts
     .all()
-    .flatMap((row) => buildPublicPrompts(mapSubmissionRow(row, { publicBaseUrl, token: adminToken })));
+    .flatMap((row) => buildPublicPrompts(mapSubmissionRow(row, { publicBaseUrl })));
   response.json({ ok: true, prompts });
 });
 
@@ -500,7 +534,7 @@ app.get('/api/public/featured', (request, response) => {
   const deviceId = cleanText(request.query?.deviceId, 128);
   const submissions = listPublicFeatured
     .all()
-    .map((row) => buildPublicFeatured(mapSubmissionWithCommunity(row, { publicBaseUrl, token: adminToken, deviceId })));
+    .map((row) => buildPublicFeatured(mapSubmissionWithCommunity(row, { publicBaseUrl, deviceId })));
   response.json({ ok: true, submissions });
 });
 
@@ -565,7 +599,7 @@ app.post('/api/public/submissions/:id/vote', communityVoteRateLimit, (request, r
 app.get('/api/public/leaderboard', (_request, response) => {
   const rows = listLeaderboard
     .all()
-    .map((row) => mapSubmissionRow(row, { publicBaseUrl, token: adminToken }));
+    .map((row) => mapSubmissionRow(row, { publicBaseUrl }));
   const items = rows.map((submission, index) => ({
     rank: index + 1,
     id: submission.id,
@@ -640,24 +674,24 @@ app.post('/api/forum/threads/:id/replies', forumRateLimit, (request, response) =
   });
 });
 
-app.get('/api/submissions/export.csv', requireAdminToken, (_request, response) => {
+app.get('/api/submissions/export.csv', requireAdminRole(['admin', 'judge', 'viewer']), (_request, response) => {
   const records = listSubmissions
     .all()
-    .map((row) => mapSubmissionRow(row, { publicBaseUrl, token: adminToken }));
+    .map((row) => mapSubmissionRow(row, { publicBaseUrl }));
 
   response.setHeader('content-type', 'text/csv; charset=utf-8');
   response.setHeader('content-disposition', 'attachment; filename="ai-challenge-submissions.csv"');
   response.send(formatSubmissionsCsv(records));
 });
 
-app.get('/api/admin/submissions', requireAdminToken, (_request, response) => {
+app.get('/api/admin/submissions', requireAdminRole(['admin', 'judge', 'viewer']), (_request, response) => {
   const records = listSubmissions
     .all()
-    .map((row) => mapSubmissionWithCommunity(row, { publicBaseUrl, token: adminToken }));
+    .map((row) => mapSubmissionWithCommunity(row, { publicBaseUrl }));
   response.json({ ok: true, submissions: records });
 });
 
-app.patch('/api/admin/submissions/:id', requireAdminToken, (request, response) => {
+app.patch('/api/admin/submissions/:id', requireAdminRole(['admin', 'judge']), (request, response) => {
   const id = String(request.params.id || '');
   const existing = findSubmissionById.get(id);
   if (!existing) {
@@ -673,11 +707,11 @@ app.patch('/api/admin/submissions/:id', requireAdminToken, (request, response) =
   const judgeNote = cleanText(request.body?.judgeNote ?? current.judgeNote, 2000);
 
   updateSubmissionReview.run(reviewStatus, promptStatus, featuredStatus, score, judgeNote, id);
-  const updated = mapSubmissionWithCommunity(findSubmissionById.get(id), { publicBaseUrl, token: adminToken });
+  const updated = mapSubmissionWithCommunity(findSubmissionById.get(id), { publicBaseUrl });
   response.json({ ok: true, submission: updated });
 });
 
-app.get('/api/admin/contact-messages', requireAdminToken, (_request, response) => {
+app.get('/api/admin/contact-messages', requireAdminRole(['admin', 'judge', 'viewer']), (_request, response) => {
   const messages = listContactMessages.all().map((row) => ({
     id: row.id,
     createdAt: row.created_at,
@@ -691,7 +725,7 @@ app.get('/api/admin/contact-messages', requireAdminToken, (_request, response) =
   response.json({ ok: true, messages });
 });
 
-app.get('/api/admin/users', requireAdminToken, (_request, response) => {
+app.get('/api/admin/users', requireAdminRole(['admin']), (_request, response) => {
   response.json({
     ok: true,
     users: listAdminUsers.all().map(toPublicAdminUser),
@@ -700,7 +734,7 @@ app.get('/api/admin/users', requireAdminToken, (_request, response) => {
   });
 });
 
-app.post('/api/admin/users', requireAdminToken, (request, response) => {
+app.post('/api/admin/users', requireAdminRole(['admin']), (request, response) => {
   const validation = normalizeAdminUserInput(request.body, { requirePassword: true });
   if (!validation.ok) {
     response.status(400).json({ ok: false, errors: validation.errors });
@@ -726,7 +760,7 @@ app.post('/api/admin/users', requireAdminToken, (request, response) => {
   response.status(201).json({ ok: true, user: toPublicAdminUser(findAdminUserById.get(id)) });
 });
 
-app.patch('/api/admin/users/:id', requireAdminToken, (request, response) => {
+app.patch('/api/admin/users/:id', requireAdminRole(['admin']), (request, response) => {
   const id = String(request.params.id || '');
   const current = findAdminUserById.get(id);
   if (!current) {
@@ -775,7 +809,7 @@ app.get('/api/submissions/covers/:storedName', (request, response) => {
   response.sendFile(filePath);
 });
 
-app.get('/api/submissions/files/:storedName', requireAdminToken, (request, response) => {
+app.get('/api/submissions/files/:storedName', requireAdminRole(['admin', 'judge', 'viewer']), (request, response) => {
   const storedName = path.basename(request.params.storedName);
   if (storedName !== request.params.storedName) {
     response.status(400).json({ ok: false, errors: ['Ten file khong hop le.'] });
@@ -837,13 +871,55 @@ function seedAdminUser() {
   );
 }
 
+function requireAdminRole(allowedRoles) {
+  return (request, response, next) => {
+    const providedToken = request.get('x-admin-token');
+    const session = verifyAdminSessionToken(providedToken, { secret: adminToken });
+    if (!session.ok) {
+      response.status(401).json({ ok: false, errors: ['Can token quan tri hop le.'] });
+      return;
+    }
+    const currentUser = resolveAdminSessionUser(session);
+    if (!currentUser) {
+      response.status(401).json({ ok: false, errors: ['Can token quan tri hop le.'] });
+      return;
+    }
+    if (!hasAdminRole(currentUser, allowedRoles)) {
+      response.status(403).json({ ok: false, errors: ['Tai khoan khong co quyen thuc hien thao tac nay.'] });
+      return;
+    }
+    request.adminUser = currentUser;
+    next();
+  };
+}
+
 function requireAdminToken(request, response, next) {
-  const providedToken = request.get('x-admin-token') || request.query.token;
-  if (!adminToken || providedToken !== adminToken) {
+  const providedToken = request.get('x-admin-token');
+  const session = verifyAdminSessionToken(providedToken, { secret: adminToken });
+  if (!session.ok) {
     response.status(401).json({ ok: false, errors: ['Can token quan tri hop le.'] });
     return;
   }
+  const currentUser = resolveAdminSessionUser(session);
+  if (!currentUser) {
+    response.status(401).json({ ok: false, errors: ['Can token quan tri hop le.'] });
+    return;
+  }
+  request.adminUser = currentUser;
   next();
+}
+
+function resolveAdminSessionUser(session) {
+  if (!session?.user?.id || !session.user.username) return null;
+  if (session.user.id === 'ENV-ADMIN') {
+    return session.user.username === adminUsername
+      ? { id: 'ENV-ADMIN', username: adminUsername, role: 'admin' }
+      : null;
+  }
+
+  const currentUser = findAdminUserById.get(session.user.id);
+  if (!currentUser || currentUser.status !== 'active') return null;
+  return toAdminSessionUser(currentUser);
 }
 
 function moveUploadedFile(submissionId, kind, index, file) {
@@ -984,8 +1060,8 @@ function positiveEnvNumber(name, fallback) {
   return Math.floor(value);
 }
 
-function mapSubmissionWithCommunity(row, { publicBaseUrl = '', token = '', deviceId = '' } = {}) {
-  const submission = mapSubmissionRow(row, { publicBaseUrl, token });
+function mapSubmissionWithCommunity(row, { publicBaseUrl = '', deviceId = '' } = {}) {
+  const submission = mapSubmissionRow(row, { publicBaseUrl });
   const community = getCommunityVoteSummary(submission.id);
   const cleanDeviceId = cleanText(deviceId, 128);
   const viewerHasVoted = cleanDeviceId
@@ -1001,6 +1077,14 @@ function mapSubmissionWithCommunity(row, { publicBaseUrl = '', token = '', devic
     communityVoteCount: community.total,
     communityReactions: community.reactions,
     viewerHasVoted,
+  };
+}
+
+function toAdminSessionUser(row) {
+  return {
+    id: row.id,
+    username: row.username,
+    role: row.role,
   };
 }
 

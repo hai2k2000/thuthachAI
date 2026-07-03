@@ -150,14 +150,14 @@ export function formatSubmissionsCsv(submissions) {
   return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n')}\n`;
 }
 
-export function mapSubmissionRow(row, { publicBaseUrl = '', token = '' } = {}) {
+export function mapSubmissionRow(row, { publicBaseUrl = '' } = {}) {
   const submissionFiles = JSON.parse(row.submission_files_json || '[]').map((file) => ({
     ...file,
-    downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName, token),
+    downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName),
   }));
   const evidenceFiles = JSON.parse(row.files_json || '[]').map((file) => ({
     ...file,
-    downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName, token),
+    downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName),
   }));
   const workflowSteps = JSON.parse(row.workflow_steps_json || '[]');
   const coverImage = parseCoverImage(row.cover_image_json, { publicBaseUrl });
@@ -193,11 +193,10 @@ export function mapSubmissionRow(row, { publicBaseUrl = '', token = '' } = {}) {
   };
 }
 
-export function buildDownloadUrl(publicBaseUrl, storedName, token) {
+export function buildDownloadUrl(publicBaseUrl, storedName) {
   const base = String(publicBaseUrl || '').replace(/\/$/, '');
   const encodedName = encodeURIComponent(storedName);
-  const encodedToken = encodeURIComponent(token);
-  return `${base}/api/submissions/files/${encodedName}?token=${encodedToken}`;
+  return `${base}/api/submissions/files/${encodedName}`;
 }
 
 export function buildCoverImageUrl(publicBaseUrl, storedName) {

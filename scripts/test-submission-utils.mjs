@@ -138,7 +138,7 @@ test('maps cover image metadata with a public cover URL', () => {
       size: 2048,
       generated: true,
     }),
-  }, { publicBaseUrl: 'https://thuthachai.io.vn', token: 'secret' });
+  }, { publicBaseUrl: 'https://thuthachai.io.vn' });
 
   assert.equal(submission.coverImage.generated, true);
   assert.equal(submission.coverImage.url, 'https://thuthachai.io.vn/api/submissions/covers/TD-20260701-ABC123XY-anh-dai-dien-auto.svg');
@@ -176,14 +176,14 @@ test('formats submissions as csv with quoted values and file links', () => {
       submissionFiles: [
         {
           originalName: 'bai-du-thi.docx',
-          downloadUrl: 'https://thuthachai.io.vn/api/submissions/files/bai-du-thi.docx?token=secret',
+          downloadUrl: 'https://thuthachai.io.vn/api/submissions/files/bai-du-thi.docx',
           size: 4096,
         },
       ],
       evidenceFiles: [
         {
           originalName: 'minh-chung.pdf',
-          downloadUrl: 'https://thuthachai.io.vn/api/submissions/files/file.pdf?token=secret',
+          downloadUrl: 'https://thuthachai.io.vn/api/submissions/files/file.pdf',
           size: 2048,
         },
       ],
@@ -197,5 +197,6 @@ test('formats submissions as csv with quoted values and file links', () => {
   assert.match(csv, /"Hay tom tat ""van ban"" theo nhom chu de\."/);
   assert.match(csv, /bai-du-thi\.docx/);
   assert.match(csv, /minh-chung\.pdf/);
-  assert.match(csv, /https:\/\/thuthachai\.io\.vn\/api\/submissions\/files\/file\.pdf\?token=secret/);
+  assert.match(csv, /https:\/\/thuthachai\.io\.vn\/api\/submissions\/files\/file\.pdf/);
+  assert.doesNotMatch(csv, /\?token=/);
 });
