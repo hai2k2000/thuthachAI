@@ -55,6 +55,27 @@ test('rejects tampered admin session tokens', () => {
   assert.equal(session.reason, 'invalid_signature');
 });
 
+test('rejects admin session tokens with extra segments', () => {
+  const token = createAdminSessionToken({
+    user: {
+      id: 'USR-ADMIN',
+      username: 'admin',
+      role: 'admin',
+    },
+    secret: 'test-secret',
+    now: 1_000,
+    ttlMs: 60_000,
+  });
+
+  const session = verifyAdminSessionToken(`${token}.extra`, {
+    secret: 'test-secret',
+    now: 2_000,
+  });
+
+  assert.equal(session.ok, false);
+  assert.equal(session.reason, 'invalid_format');
+});
+
 test('rejects expired admin session tokens', () => {
   const token = createAdminSessionToken({
     user: {

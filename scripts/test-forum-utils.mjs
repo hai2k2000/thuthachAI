@@ -41,6 +41,20 @@ test('rejects incomplete forum thread input', () => {
   ]);
 });
 
+test('rejects invalid forum categories instead of silently changing them', () => {
+  const result = normalizeForumThreadInput({
+    authorName: 'Nguyen Van A',
+    department: 'Ban Noi dung so',
+    category: 'Ngoai pham vi',
+    title: 'Cach dung AI de xu ly cong viec hang ngay',
+    content: 'Noi dung chia se du dai de kiem tra viec validate chuyen muc dien dan.',
+    aiTools: 'ChatGPT',
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('Chuyen muc dien dan khong hop le.'));
+});
+
 test('normalizes forum replies', () => {
   const result = normalizeForumReplyInput({
     authorName: '  Trần Thị B ',

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  collectSubmissionFileMetadata,
   createSubmissionId,
   createGeneratedCoverSvg,
   formatSubmissionsCsv,
@@ -188,6 +189,19 @@ test('maps corrupted submission json metadata to empty safe defaults', () => {
   assert.deepEqual(submission.workflowSteps, []);
   assert.equal(submission.coverImage, null);
   assert.deepEqual(submission.files, []);
+});
+
+test('collects submission file metadata safely when some stored json is corrupted', () => {
+  const files = collectSubmissionFileMetadata({
+    submission_files_json: JSON.stringify([{ storedName: 'bai.docx', originalName: 'Bai du thi.docx' }]),
+    files_json: '{broken',
+    cover_image_json: JSON.stringify({ storedName: 'cover.svg', originalName: 'Anh dai dien.svg' }),
+  });
+
+  assert.deepEqual(files, [
+    { storedName: 'bai.docx', originalName: 'Bai du thi.docx' },
+    { storedName: 'cover.svg', originalName: 'Anh dai dien.svg' },
+  ]);
 });
 
 test('formats submissions as csv with quoted values and file links', () => {

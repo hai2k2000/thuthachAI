@@ -32,6 +32,7 @@ import {
   normalizeCommunityVoteInput,
   summarizeCommunityVotes,
 } from './community-votes.mjs';
+import { normalizeContactMessageInput } from './contact-utils.mjs';
 import {
   createForumReplyId,
   createForumThreadId,
@@ -41,6 +42,7 @@ import {
   normalizeForumThreadInput,
 } from './forum-utils.mjs';
 import {
+  collectSubmissionFileMetadata,
   createGeneratedCoverSvg,
   createSubmissionId,
   formatSubmissionsCsv,
@@ -136,6 +138,10 @@ fs.mkdirSync(uploadDir, { recursive: true });
 fs.mkdirSync(tempDir, { recursive: true });
 
 const db = new DatabaseSync(dbPath);
+db.exec(`
+  PRAGMA journal_mode = WAL;
+  PRAGMA busy_timeout = 5000;
+`);
 db.exec(`
   CREATE TABLE IF NOT EXISTS submissions (
     id TEXT PRIMARY KEY,
@@ -602,19 +608,24 @@ app.post('/api/submissions', submissionsRateLimit, upload.fields([
 });
 
 app.post('/api/contact', contactRateLimit, (request, response) => {
-  const name = cleanText(request.body?.name);
-  const department = cleanText(request.body?.department);
-  const email = cleanText(request.body?.email);
-  const message = cleanText(request.body?.message);
-  const attachment = cleanText(request.body?.attachment);
-
-  if (!name || !email || !message) {
-    response.status(400).json({ ok: false, errors: ['Vui long nhap ho ten, email va noi dung can ho tro.'] });
+  const validation = normalizeContactMessageInput(request.body);
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
     return;
   }
 
+  const message = validation.message;
   const id = `CT-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`;
-  insertContactMessage.run(id, new Date().toISOString(), name, department, email, message, attachment, 'new');
+  insertContactMessage.run(
+    id,
+    new Date().toISOString(),
+    message.name,
+    message.department,
+    message.email,
+    message.message,
+    message.attachment,
+    'new',
+  );
   response.status(201).json({ ok: true, id, message: 'Yeu cau ho tro da duoc tiep nhan.' });
 });
 
@@ -1186,11 +1197,7 @@ function removeStoredFiles(files) {
 
 function findOriginalName(storedName) {
   for (const row of listFiles.all()) {
-    const files = [
-      ...JSON.parse(row.submission_files_json || '[]'),
-      ...JSON.parse(row.files_json || '[]'),
-      ...normalizeStoredFiles(row.cover_image_json),
-    ];
+    const files = collectSubmissionFileMetadata(row);
     const match = files.find((file) => file.storedName === storedName);
     if (match) return match.originalName;
   }

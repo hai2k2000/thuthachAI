@@ -8,15 +8,18 @@ export const forumCategories = [
 ];
 
 export function normalizeForumThreadInput(raw = {}) {
+  const rawCategory = cleanText(raw.category, 80);
+  const category = rawCategory || forumCategories[0];
   const thread = {
     authorName: cleanText(raw.authorName, 120),
     department: cleanText(raw.department, 160),
-    category: normalizeForumCategory(raw.category),
+    category,
     title: cleanText(raw.title, 180),
     content: cleanText(raw.content, 3000),
     aiTools: cleanText(raw.aiTools, 240),
   };
   const errors = [];
+  if (rawCategory && !forumCategories.includes(thread.category)) errors.push('Chuyen muc dien dan khong hop le.');
 
   if (thread.authorName.length < 2) errors.push('Vui lòng nhập họ tên người đăng.');
   if (thread.title.length < 10) errors.push('Tiêu đề cần tối thiểu 10 ký tự.');
@@ -73,11 +76,6 @@ export function mapForumReplyRow(row) {
     content: row.content,
     status: row.status,
   };
-}
-
-function normalizeForumCategory(value) {
-  const category = cleanText(value, 80);
-  return forumCategories.includes(category) ? category : forumCategories[0];
 }
 
 function createForumId(prefix, date, entropy) {

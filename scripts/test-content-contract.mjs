@@ -213,6 +213,10 @@ for (const communityVoteHook of ['communityVoteBox', 'communityVoteButton', 'aiC
   assert(`${app}\n${styles}\n${server}`.includes(communityVoteHook), `Missing community vote hook: ${communityVoteHook}`);
 }
 
+for (const contactValidationHook of ['normalizeContactMessageInput', "import { normalizeContactMessageInput } from './contact-utils.mjs';"]) {
+  assert(server.includes(contactValidationHook), `Contact API must use centralized validation: ${contactValidationHook}`);
+}
+
 for (const assistantBotHook of ['assistantBot', 'assistantBotPanel', 'Trợ lý Thử thách AI', 'assistantQuickQuestions', 'matchAssistantAnswer']) {
   assert(`${app}\n${styles}`.includes(assistantBotHook), `Missing assistant bot hook: ${assistantBotHook}`);
 }
@@ -274,6 +278,9 @@ for (const goLiveHook of [
 }
 assert(backupProduction.includes('backupSqliteDatabase(config.dbPath'), 'Production backup must use SQLite snapshot backup instead of copying a live DB file');
 assert(!backupProduction.includes('copyFileSync(config.dbPath'), 'Production backup must not raw-copy the live SQLite database');
+for (const sqliteRuntimePragma of ['PRAGMA journal_mode = WAL', 'PRAGMA busy_timeout = 5000']) {
+  assert(server.includes(sqliteRuntimePragma), `SQLite runtime must set production pragma: ${sqliteRuntimePragma}`);
+}
 assert(app.includes('function apiFetch'), 'Frontend API calls must go through apiFetch');
 assert(app.includes("credentials: init.credentials ?? 'include'"), 'apiFetch must include same-origin proxy cookies');
 for (const apiFetchHook of ['async function apiFetch', 'shouldRetryApiFetch', 'warmApiOrigin', 'await warmApiOrigin()', "method === 'GET'", "error instanceof TypeError", "'/api/submissions/health'"]) {

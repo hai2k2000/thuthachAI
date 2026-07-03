@@ -37,7 +37,11 @@ export function verifyAdminSessionToken(token, {
   now = Date.now(),
 } = {}) {
   const cleanSecret = String(secret || '');
-  const [encodedPayload, signature] = String(token || '').split('.');
+  const tokenParts = String(token || '').split('.');
+  if (tokenParts.length !== 2) {
+    return { ok: false, reason: 'invalid_format' };
+  }
+  const [encodedPayload, signature] = tokenParts;
   if (!cleanSecret || !encodedPayload || !signature) {
     return { ok: false, reason: 'missing_token' };
   }

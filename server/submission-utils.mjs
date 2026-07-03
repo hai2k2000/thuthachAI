@@ -193,6 +193,14 @@ export function mapSubmissionRow(row, { publicBaseUrl = '' } = {}) {
   };
 }
 
+export function collectSubmissionFileMetadata(row = {}) {
+  return [
+    ...parseJsonArray(row.submission_files_json),
+    ...parseJsonArray(row.files_json),
+    ...normalizeStoredFiles(row.cover_image_json),
+  ];
+}
+
 export function buildDownloadUrl(publicBaseUrl, storedName) {
   const base = String(publicBaseUrl || '').replace(/\/$/, '');
   const encodedName = encodeURIComponent(storedName);
@@ -263,6 +271,17 @@ function parseCoverImage(value, { publicBaseUrl = '' } = {}) {
     };
   } catch {
     return null;
+  }
+}
+
+function normalizeStoredFiles(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed) return [];
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [];
   }
 }
 
