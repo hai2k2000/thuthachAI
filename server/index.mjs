@@ -49,6 +49,8 @@ import {
   validateSubmissionFields,
 } from './submission-utils.mjs';
 import { createRateLimitMiddleware, createRateLimitStore } from './rate-limit.mjs';
+import { getRequestIp } from './request-ip.mjs';
+import { isSqliteUniqueConstraintError } from './sqlite-errors.mjs';
 import { validateUploadedImageSignatures } from './upload-security.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -657,24 +659,25 @@ app.post('/api/public/submissions/:id/vote', communityVoteRateLimit, (request, r
   const community = getCommunityVoteSummary(id);
 
   if (existingVote) {
-    response.status(409).json({
-      ok: false,
-      voted: true,
-      errors: ['Thiet bi nay da binh chon bai du thi nay.'],
-      communityVoteCount: community.total,
-      communityReactions: community.reactions,
-      viewerHasVoted: true,
-    });
+    sendDuplicateCommunityVote(response, community);
     return;
   }
 
-  insertCommunityVote.run(
-    `CV-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
-    new Date().toISOString(),
-    id,
-    voterKey,
-    validation.vote.reaction,
-  );
+  try {
+    insertCommunityVote.run(
+      `CV-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
+      new Date().toISOString(),
+      id,
+      voterKey,
+      validation.vote.reaction,
+    );
+  } catch (error) {
+    if (isSqliteUniqueConstraintError(error)) {
+      sendDuplicateCommunityVote(response, getCommunityVoteSummary(id));
+      return;
+    }
+    throw error;
+  }
   const updatedCommunity = getCommunityVoteSummary(id);
   response.status(201).json({
     ok: true,
@@ -867,15 +870,23 @@ app.post('/api/admin/users', requireAdminRole(['admin']), (request, response) =>
   }
 
   const id = `USR-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`;
-  insertAdminUser.run(
-    id,
-    new Date().toISOString(),
-    user.username,
-    user.displayName,
-    user.role,
-    user.status,
-    createPasswordHash(user.password),
-  );
+  try {
+    insertAdminUser.run(
+      id,
+      new Date().toISOString(),
+      user.username,
+      user.displayName,
+      user.role,
+      user.status,
+      createPasswordHash(user.password),
+    );
+  } catch (error) {
+    if (isSqliteUniqueConstraintError(error)) {
+      response.status(409).json({ ok: false, errors: ['Tai khoan quan tri da ton tai.'] });
+      return;
+    }
+    throw error;
+  }
   const createdUser = findAdminUserById.get(id);
   logAdminAudit(request, {
     action: 'admin.user.create',
@@ -1207,11 +1218,6 @@ function cleanText(value, max = 500) {
   return String(value ?? '').trim().slice(0, max);
 }
 
-function getRequestIp(request) {
-  const forwarded = String(request.get('x-forwarded-for') || '').split(',')[0].trim();
-  return forwarded || request.socket?.remoteAddress || request.ip || '';
-}
-
 function createConfiguredRateLimit({
   keyPrefix,
   limitEnv,
@@ -1266,6 +1272,17 @@ function toAdminSessionUser(row) {
 
 function getCommunityVoteSummary(submissionId) {
   return summarizeCommunityVotes(listCommunityVotesBySubmission.all(submissionId));
+}
+
+function sendDuplicateCommunityVote(response, community) {
+  response.status(409).json({
+    ok: false,
+    voted: true,
+    errors: ['Thiet bi nay da binh chon bai du thi nay.'],
+    communityVoteCount: community.total,
+    communityReactions: community.reactions,
+    viewerHasVoted: true,
+  });
 }
 
 function buildPublicPrompts(submission) {

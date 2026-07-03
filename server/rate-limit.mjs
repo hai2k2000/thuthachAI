@@ -1,3 +1,5 @@
+import { getRequestIp } from './request-ip.mjs';
+
 export function createRateLimitStore() {
   return new Map();
 }
@@ -77,8 +79,7 @@ function buildResult({ allowed, count, limit, resetAt, now }) {
 }
 
 function defaultRequestKey(request = {}) {
-  const forwarded = String(request.get?.('x-forwarded-for') || '').split(',')[0].trim();
-  return forwarded || request.ip || request.socket?.remoteAddress || 'anonymous';
+  return getRequestIp(request) || 'anonymous';
 }
 
 function positiveInteger(value, fallback) {

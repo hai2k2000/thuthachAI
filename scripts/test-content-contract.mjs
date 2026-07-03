@@ -9,6 +9,8 @@ const styles = fs.readFileSync(path.join(root, 'src/styles.css'), 'utf8');
 const server = fs.readFileSync(path.join(root, 'server/index.mjs'), 'utf8');
 const adminAudit = fs.readFileSync(path.join(root, 'server/admin-audit.mjs'), 'utf8');
 const apiErrors = fs.readFileSync(path.join(root, 'server/api-errors.mjs'), 'utf8');
+const sqliteErrors = fs.readFileSync(path.join(root, 'server/sqlite-errors.mjs'), 'utf8');
+const requestIp = fs.readFileSync(path.join(root, 'server/request-ip.mjs'), 'utf8');
 const uploadSecurity = fs.readFileSync(path.join(root, 'server/upload-security.mjs'), 'utf8');
 const nginxConfig = fs.readFileSync(path.join(root, 'deploy/ai-challenge-hub.conf'), 'utf8');
 const harnessDir = path.join(root, 'harness');
@@ -183,6 +185,12 @@ for (const adminAuditAction of ['admin.login.success', 'admin.login.failed', 'su
 }
 for (const adminAuditUiHook of ['adminAuditPanel', 'adminAuditLogs', '/api/admin/audit-logs', '#admin-audit']) {
   assert(app.includes(adminAuditUiHook), `Missing admin audit UI hook: ${adminAuditUiHook}`);
+}
+for (const sqliteRaceHook of ['isSqliteUniqueConstraintError', 'sendDuplicateCommunityVote(response', 'Tai khoan quan tri da ton tai.']) {
+  assert(`${server}\n${sqliteErrors}`.includes(sqliteRaceHook), `Missing sqlite race handling hook: ${sqliteRaceHook}`);
+}
+for (const requestIpHook of ["request.get?.('x-real-ip')", "request.get?.('x-forwarded-for')", 'forwardedFor.at(-1)']) {
+  assert(requestIp.includes(requestIpHook), `Missing spoof-resistant request IP hook: ${requestIpHook}`);
 }
 
 for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain', 'adminOverviewPanel']) {
