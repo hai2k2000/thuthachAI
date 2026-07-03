@@ -19,6 +19,7 @@ import {
   createPasswordHash,
   normalizeAdminUserInput,
   toPublicAdminUser,
+  validateLastActiveAdminChange,
   verifyPassword,
 } from './admin-users.mjs';
 import {
@@ -50,6 +51,7 @@ import {
 } from './submission-utils.mjs';
 import { createRateLimitMiddleware, createRateLimitStore } from './rate-limit.mjs';
 import { getRequestIp } from './request-ip.mjs';
+import { applySecurityHeaders } from './security-headers.mjs';
 import { isSqliteUniqueConstraintError } from './sqlite-errors.mjs';
 import { validateUploadedImageSignatures } from './upload-security.mjs';
 
@@ -405,6 +407,7 @@ const upload = multer({
 
 const app = express();
 app.disable('x-powered-by');
+app.use(applySecurityHeaders);
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/submissions/health', (_request, response) => {
@@ -923,6 +926,12 @@ app.patch('/api/admin/users/:id', requireAdminRole(['admin']), (request, respons
   }
 
   const user = validation.user;
+  const lastActiveAdminValidation = validateLastActiveAdminChange(listAdminUsers.all(), id, user);
+  if (!lastActiveAdminValidation.ok) {
+    response.status(409).json({ ok: false, errors: lastActiveAdminValidation.errors });
+    return;
+  }
+
   const passwordHash = user.password ? createPasswordHash(user.password) : current.password_hash;
   updateAdminUser.run(user.displayName, user.role, user.status, passwordHash, id);
   const updatedUser = findAdminUserById.get(id);

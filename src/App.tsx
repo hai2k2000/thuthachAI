@@ -2349,9 +2349,9 @@ function ContactPage() {
 }
 
 function AdminPage() {
-  const [token, setToken] = useState(() => window.localStorage.getItem('aiChallengeAdminToken') || '');
-  const [adminUser, setAdminUser] = useState(() => window.localStorage.getItem('aiChallengeAdminUser') || '');
-  const [adminRole, setAdminRole] = useState<AdminRole>(() => normalizeAdminRole(window.localStorage.getItem('aiChallengeAdminRole')));
+  const [token, setToken] = useState(() => window.sessionStorage.getItem('aiChallengeAdminToken') || '');
+  const [adminUser, setAdminUser] = useState(() => window.sessionStorage.getItem('aiChallengeAdminUser') || '');
+  const [adminRole, setAdminRole] = useState<AdminRole>(() => normalizeAdminRole(window.sessionStorage.getItem('aiChallengeAdminRole')));
   const [loginForm, setLoginForm] = useState({ username: 'admin', password: '' });
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -2402,9 +2402,9 @@ function AdminPage() {
 
       const nextUser = data.username || loginForm.username.trim();
       const nextRole = normalizeAdminRole(data.role) || 'viewer';
-      window.localStorage.setItem('aiChallengeAdminToken', data.token);
-      window.localStorage.setItem('aiChallengeAdminUser', nextUser);
-      window.localStorage.setItem('aiChallengeAdminRole', nextRole);
+      window.sessionStorage.setItem('aiChallengeAdminToken', data.token);
+      window.sessionStorage.setItem('aiChallengeAdminUser', nextUser);
+      window.sessionStorage.setItem('aiChallengeAdminRole', nextRole);
       setToken(data.token);
       setAdminUser(nextUser);
       setAdminRole(nextRole);
@@ -2416,6 +2416,9 @@ function AdminPage() {
   }
 
   function handleAdminLogout() {
+    window.sessionStorage.removeItem('aiChallengeAdminToken');
+    window.sessionStorage.removeItem('aiChallengeAdminUser');
+    window.sessionStorage.removeItem('aiChallengeAdminRole');
     window.localStorage.removeItem('aiChallengeAdminToken');
     window.localStorage.removeItem('aiChallengeAdminUser');
     window.localStorage.removeItem('aiChallengeAdminRole');
@@ -2465,8 +2468,8 @@ function AdminPage() {
       if (!userResponse.ok) throw new Error(userData.errors?.join(' ') || 'Không thể tải danh sách tài khoản.');
       if (!auditResponse.ok) throw new Error(auditData.errors?.join(' ') || 'Không thể tải nhật ký quản trị.');
 
-      window.localStorage.setItem('aiChallengeAdminToken', nextToken);
-      window.localStorage.setItem('aiChallengeAdminRole', role);
+      window.sessionStorage.setItem('aiChallengeAdminToken', nextToken);
+      window.sessionStorage.setItem('aiChallengeAdminRole', role);
       setToken(nextToken);
       setAdminRole(role);
       setSubmissions(submissionData.submissions ?? []);

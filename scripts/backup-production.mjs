@@ -8,6 +8,7 @@ import {
   listExpiredBackupFiles,
   resolveBackupConfig,
 } from '../server/backup-utils.mjs';
+import { backupSqliteDatabase } from '../server/sqlite-backup.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = resolveBackupConfig({ rootDir });
@@ -19,7 +20,7 @@ try {
   ensureBackupInputs(config);
   fs.rmSync(stagingDir, { recursive: true, force: true });
   fs.mkdirSync(stagingDir, { recursive: true });
-  fs.copyFileSync(config.dbPath, path.join(stagingDir, 'submissions.sqlite'));
+  backupSqliteDatabase(config.dbPath, path.join(stagingDir, 'submissions.sqlite'));
 
   const result = spawnSync('tar', [
     '-czf',

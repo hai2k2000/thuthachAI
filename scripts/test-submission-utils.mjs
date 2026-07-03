@@ -153,6 +153,43 @@ test('maps cover image metadata with a public cover URL', () => {
   assert.equal(submission.coverImage.url, 'https://thuthachai.io.vn/api/submissions/covers/TD-20260701-ABC123XY-anh-dai-dien-auto.svg');
 });
 
+test('maps corrupted submission json metadata to empty safe defaults', () => {
+  const submission = mapSubmissionRow({
+    id: 'TD-1',
+    created_at: '2026-07-01T00:00:00.000Z',
+    participant_name: 'Nguyen Van A',
+    department: 'Phong Tong hop',
+    contact: '0900000000',
+    email: 'a@example.test',
+    week: 'Tuan 1',
+    challenge_group: 'Nhom Tong hop',
+    title: 'Bai du thi',
+    ai_tools: 'ChatGPT',
+    problem: 'Van de',
+    process_summary: 'Quy trinh',
+    main_prompt: '',
+    final_result: '',
+    lessons: '',
+    recommendations: '',
+    public_prompt: 0,
+    submission_files_json: '{broken',
+    files_json: '{broken',
+    workflow_steps_json: '{broken',
+    cover_image_json: '{broken',
+    review_status: 'pending',
+    prompt_status: 'pending',
+    featured_status: 'pending',
+    score: 0,
+    judge_note: '',
+  });
+
+  assert.deepEqual(submission.submissionFiles, []);
+  assert.deepEqual(submission.evidenceFiles, []);
+  assert.deepEqual(submission.workflowSteps, []);
+  assert.equal(submission.coverImage, null);
+  assert.deepEqual(submission.files, []);
+});
+
 test('formats submissions as csv with quoted values and file links', () => {
   const csv = formatSubmissionsCsv([
     {

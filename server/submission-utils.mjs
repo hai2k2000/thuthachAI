@@ -151,15 +151,15 @@ export function formatSubmissionsCsv(submissions) {
 }
 
 export function mapSubmissionRow(row, { publicBaseUrl = '' } = {}) {
-  const submissionFiles = JSON.parse(row.submission_files_json || '[]').map((file) => ({
+  const submissionFiles = parseJsonArray(row.submission_files_json).map((file) => ({
     ...file,
     downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName),
   }));
-  const evidenceFiles = JSON.parse(row.files_json || '[]').map((file) => ({
+  const evidenceFiles = parseJsonArray(row.files_json).map((file) => ({
     ...file,
     downloadUrl: buildDownloadUrl(publicBaseUrl, file.storedName),
   }));
-  const workflowSteps = JSON.parse(row.workflow_steps_json || '[]');
+  const workflowSteps = parseJsonArray(row.workflow_steps_json);
   const coverImage = parseCoverImage(row.cover_image_json, { publicBaseUrl });
 
   return {
@@ -263,6 +263,16 @@ function parseCoverImage(value, { publicBaseUrl = '' } = {}) {
     };
   } catch {
     return null;
+  }
+}
+
+function parseJsonArray(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }
 

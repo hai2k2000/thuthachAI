@@ -12,6 +12,7 @@ const apiErrors = fs.readFileSync(path.join(root, 'server/api-errors.mjs'), 'utf
 const sqliteErrors = fs.readFileSync(path.join(root, 'server/sqlite-errors.mjs'), 'utf8');
 const requestIp = fs.readFileSync(path.join(root, 'server/request-ip.mjs'), 'utf8');
 const uploadSecurity = fs.readFileSync(path.join(root, 'server/upload-security.mjs'), 'utf8');
+const backupProduction = fs.readFileSync(path.join(root, 'scripts/backup-production.mjs'), 'utf8');
 const nginxConfig = fs.readFileSync(path.join(root, 'deploy/ai-challenge-hub.conf'), 'utf8');
 const harnessDir = path.join(root, 'harness');
 
@@ -153,6 +154,9 @@ assert(countdownValueStyles.includes('color: var(--primary);'), 'Countdown value
 for (const adminLoginHook of ['loginButton', 'adminLoginPanel', 'adminToolbar', '/api/admin/login', 'aiChallengeAdminUser']) {
   assert(`${app}\n${components}`.includes(adminLoginHook), `Missing admin login hook: ${adminLoginHook}`);
 }
+assert(app.includes("window.sessionStorage.getItem('aiChallengeAdminToken')"), 'Admin token must be restored from sessionStorage only');
+assert(!app.includes("window.localStorage.getItem('aiChallengeAdminToken')"), 'Admin token must not be restored from persistent localStorage');
+assert(!app.includes("window.localStorage.setItem('aiChallengeAdminToken'"), 'Admin token must not be persisted in localStorage');
 
 for (const adminDashboardHook of ['adminOverviewGrid', 'adminSidebarNav', 'adminScorePanel', 'adminUserPanel', 'adminUserForm', '/api/admin/users']) {
   assert(`${app}\n${styles}\n${server}`.includes(adminDashboardHook), `Missing admin dashboard hook: ${adminDashboardHook}`);
@@ -160,7 +164,7 @@ for (const adminDashboardHook of ['adminOverviewGrid', 'adminSidebarNav', 'admin
 for (const adminSecurityHook of ['createAdminSessionToken', 'verifyAdminSessionToken', 'requireAdminRole', "requireAdminRole(['admin'])", "requireAdminRole(['admin', 'judge'])"]) {
   assert(server.includes(adminSecurityHook) || app.includes(adminSecurityHook), `Missing admin RBAC/session hook: ${adminSecurityHook}`);
 }
-for (const adminRevocationHook of ['resolveAdminSessionUser', 'findAdminUserById.get(session.user.id)', "currentUser.status !== 'active'", 'request.adminUser = currentUser']) {
+for (const adminRevocationHook of ['resolveAdminSessionUser', 'findAdminUserById.get(session.user.id)', "currentUser.status !== 'active'", 'request.adminUser = currentUser', 'validateLastActiveAdminChange']) {
   assert(server.includes(adminRevocationHook), `Admin RBAC must re-check current user state before authorizing: ${adminRevocationHook}`);
 }
 assert(!server.includes('request.query.token'), 'Admin token must not be accepted in query strings');
@@ -268,6 +272,8 @@ for (const goLiveHook of [
 ]) {
   assert(server.includes(goLiveHook), `Missing API go-live hardening hook: ${goLiveHook}`);
 }
+assert(backupProduction.includes('backupSqliteDatabase(config.dbPath'), 'Production backup must use SQLite snapshot backup instead of copying a live DB file');
+assert(!backupProduction.includes('copyFileSync(config.dbPath'), 'Production backup must not raw-copy the live SQLite database');
 assert(app.includes('function apiFetch'), 'Frontend API calls must go through apiFetch');
 assert(app.includes("credentials: init.credentials ?? 'include'"), 'apiFetch must include same-origin proxy cookies');
 for (const apiFetchHook of ['async function apiFetch', 'shouldRetryApiFetch', 'warmApiOrigin', 'await warmApiOrigin()', "method === 'GET'", "error instanceof TypeError", "'/api/submissions/health'"]) {
@@ -292,5 +298,14 @@ const spaShellCacheControlCount = (nginxConfig.match(/add_header Cache-Control "
 assert(spaShellCacheControlCount >= 2, 'Nginx must prevent cached SPA shells on HTTPS and 8088 servers');
 assert(nginxConfig.includes('location = /index.html'), 'Nginx must set explicit no-cache headers for index.html');
 assert(nginxConfig.includes('try_files $uri $uri/ /index.html;'), 'Nginx must keep SPA fallback routing');
+for (const securityHeader of [
+  'add_header X-Content-Type-Options "nosniff" always;',
+  'add_header Referrer-Policy "strict-origin-when-cross-origin" always;',
+  'add_header X-Frame-Options "DENY" always;',
+  'add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;',
+]) {
+  const count = (nginxConfig.match(new RegExp(securityHeader.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+  assert(count >= 6, `Nginx static/proxy locations must set security header: ${securityHeader}`);
+}
 
 console.log('Content contract passed');
