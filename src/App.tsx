@@ -60,11 +60,54 @@ import {
   submissions,
 } from './data';
 
-function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-  return fetch(input, {
+async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const requestInit: RequestInit = {
     ...init,
     credentials: init.credentials ?? 'include',
-  });
+  };
+
+  try {
+    return await fetch(input, requestInit);
+  } catch (error) {
+    if (!shouldRetryApiFetch(input, init, error)) {
+      throw error;
+    }
+
+    await warmApiOrigin();
+    return fetch(input, requestInit);
+  }
+}
+
+function shouldRetryApiFetch(input: RequestInfo | URL, init: RequestInit, error: unknown) {
+  const method = String(init.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
+  return method === 'GET' && isApiRequest(input) && error instanceof TypeError;
+}
+
+function isApiRequest(input: RequestInfo | URL) {
+  if (typeof input === 'string') return input.includes('/api/');
+  if (input instanceof URL) return input.pathname.startsWith('/api/');
+  if (input instanceof Request) {
+    try {
+      return new URL(input.url, window.location.origin).pathname.startsWith('/api/');
+    } catch {
+      return input.url.includes('/api/');
+    }
+  }
+  return false;
+}
+
+async function warmApiOrigin() {
+  try {
+    await fetch('/api/submissions/health', {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+  } catch {
+    await fetch('/', {
+      credentials: 'include',
+      cache: 'reload',
+    }).catch(() => undefined);
+  }
 }
 
 export default function App() {

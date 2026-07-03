@@ -7,6 +7,7 @@ const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 const components = fs.readFileSync(path.join(root, 'src/components.tsx'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'src/styles.css'), 'utf8');
 const server = fs.readFileSync(path.join(root, 'server/index.mjs'), 'utf8');
+const nginxConfig = fs.readFileSync(path.join(root, 'deploy/ai-challenge-hub.conf'), 'utf8');
 const harnessDir = path.join(root, 'harness');
 
 const requiredRoutes = [
@@ -229,7 +230,27 @@ for (const goLiveHook of [
 }
 assert(app.includes('function apiFetch'), 'Frontend API calls must go through apiFetch');
 assert(app.includes("credentials: init.credentials ?? 'include'"), 'apiFetch must include same-origin proxy cookies');
-assert(!app.includes('await fetch('), 'Frontend must not call fetch directly inside awaited API requests');
-assert(!app.includes('\n    fetch('), 'Frontend must not call fetch directly inside effect API requests');
+for (const apiFetchHook of ['async function apiFetch', 'shouldRetryApiFetch', 'warmApiOrigin', 'await warmApiOrigin()', "method === 'GET'", "error instanceof TypeError", "'/api/submissions/health'"]) {
+  assert(app.includes(apiFetchHook), `apiFetch must retry transient admin API network failures: ${apiFetchHook}`);
+}
+const allowedFetchCalls = [
+  'return await fetch(input, requestInit);',
+  'return fetch(input, requestInit);',
+  "await fetch('/api/submissions/health', {",
+  "await fetch('/', {",
+];
+const fetchCallLines = app
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => line.includes('fetch('));
+assert(fetchCallLines.length === allowedFetchCalls.length, 'Frontend must keep fetch calls confined to apiFetch retry helpers');
+for (const allowedFetchCall of allowedFetchCalls) {
+  assert(fetchCallLines.includes(allowedFetchCall), `Unexpected frontend fetch call contract: ${allowedFetchCall}`);
+}
+
+const spaShellCacheControlCount = (nginxConfig.match(/add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate" always;/g) || []).length;
+assert(spaShellCacheControlCount >= 2, 'Nginx must prevent cached SPA shells on HTTPS and 8088 servers');
+assert(nginxConfig.includes('location = /index.html'), 'Nginx must set explicit no-cache headers for index.html');
+assert(nginxConfig.includes('try_files $uri $uri/ /index.html;'), 'Nginx must keep SPA fallback routing');
 
 console.log('Content contract passed');
