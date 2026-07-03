@@ -43,9 +43,9 @@ import {
   normalizeForumThreadInput,
 } from './forum-utils.mjs';
 import {
-  collectSubmissionFileMetadata,
   createGeneratedCoverSvg,
   createSubmissionId,
+  findSubmissionFileMetadata,
   formatSubmissionsCsv,
   isCoverImageFile,
   mapSubmissionRow,
@@ -68,9 +68,9 @@ const adminToken = process.env.SUBMISSIONS_ADMIN_TOKEN || '';
 const adminUsername = process.env.ADMIN_USERNAME || '';
 const adminPassword = process.env.ADMIN_PASSWORD || '';
 const communityVoteSecret = process.env.COMMUNITY_VOTE_SECRET || 'thuthachai-community-vote-v1';
-const maxUploadMb = Number(process.env.MAX_UPLOAD_MB || 25);
-const maxUploadFiles = Number(process.env.MAX_UPLOAD_FILES || 5);
-const maxSubmissionFiles = Number(process.env.MAX_SUBMISSION_FILES || 3);
+const maxUploadMb = positiveEnvNumber('MAX_UPLOAD_MB', 25);
+const maxUploadFiles = positiveEnvNumber('MAX_UPLOAD_FILES', 5);
+const maxSubmissionFiles = positiveEnvNumber('MAX_SUBMISSION_FILES', 3);
 const maxCoverImages = 1;
 const port = Number(process.env.PORT || 4310);
 const host = process.env.HOST || '127.0.0.1';
@@ -1006,13 +1006,19 @@ app.get('/api/submissions/files/:storedName', requireAdminRole(['admin', 'judge'
     return;
   }
 
+  const fileMetadata = findStoredFileMetadata(storedName);
+  if (!fileMetadata) {
+    response.status(404).json({ ok: false, errors: ['Khong tim thay file.'] });
+    return;
+  }
+
   const filePath = path.join(uploadDir, storedName);
   if (!fs.existsSync(filePath)) {
     response.status(404).json({ ok: false, errors: ['Khong tim thay file.'] });
     return;
   }
 
-  response.download(filePath, findOriginalName(storedName) || storedName);
+  response.download(filePath, fileMetadata.originalName || storedName);
 });
 
 app.use((error, _request, response, _next) => {
@@ -1203,13 +1209,8 @@ function removeStoredFiles(files) {
   }
 }
 
-function findOriginalName(storedName) {
-  for (const row of listFiles.all()) {
-    const files = collectSubmissionFileMetadata(row);
-    const match = files.find((file) => file.storedName === storedName);
-    if (match) return match.originalName;
-  }
-  return '';
+function findStoredFileMetadata(storedName) {
+  return findSubmissionFileMetadata(listFiles.all(), storedName);
 }
 
 function findCoverImage(storedName) {

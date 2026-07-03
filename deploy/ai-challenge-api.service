@@ -14,7 +14,17 @@ User=root
 Group=root
 NoNewPrivileges=true
 PrivateTmp=true
+PrivateDevices=true
 ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
 ReadWritePaths=/opt/ai-challenge-hub/storage
 
 [Install]

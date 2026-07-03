@@ -14,6 +14,8 @@ const requestIp = fs.readFileSync(path.join(root, 'server/request-ip.mjs'), 'utf
 const uploadSecurity = fs.readFileSync(path.join(root, 'server/upload-security.mjs'), 'utf8');
 const backupProduction = fs.readFileSync(path.join(root, 'scripts/backup-production.mjs'), 'utf8');
 const nginxConfig = fs.readFileSync(path.join(root, 'deploy/ai-challenge-hub.conf'), 'utf8');
+const apiService = fs.readFileSync(path.join(root, 'deploy/ai-challenge-api.service'), 'utf8');
+const backupService = fs.readFileSync(path.join(root, 'deploy/ai-challenge-backup.service'), 'utf8');
 const harnessDir = path.join(root, 'harness');
 
 const requiredRoutes = [
@@ -284,10 +286,33 @@ for (const goLiveHook of [
 ]) {
   assert(server.includes(goLiveHook), `Missing API go-live hardening hook: ${goLiveHook}`);
 }
+for (const uploadLimitHook of [
+  "positiveEnvNumber('MAX_UPLOAD_MB'",
+  "positiveEnvNumber('MAX_UPLOAD_FILES'",
+  "positiveEnvNumber('MAX_SUBMISSION_FILES'",
+]) {
+  assert(server.includes(uploadLimitHook), `Upload limits must use positive env parsing: ${uploadLimitHook}`);
+}
 assert(backupProduction.includes('backupSqliteDatabase(config.dbPath'), 'Production backup must use SQLite snapshot backup instead of copying a live DB file');
 assert(!backupProduction.includes('copyFileSync(config.dbPath'), 'Production backup must not raw-copy the live SQLite database');
 for (const sqliteRuntimePragma of ['PRAGMA journal_mode = WAL', 'PRAGMA busy_timeout = 5000']) {
   assert(server.includes(sqliteRuntimePragma), `SQLite runtime must set production pragma: ${sqliteRuntimePragma}`);
+}
+for (const serviceHardening of [
+  'ProtectHome=true',
+  'PrivateDevices=true',
+  'ProtectKernelTunables=true',
+  'ProtectKernelModules=true',
+  'ProtectControlGroups=true',
+  'RestrictSUIDSGID=true',
+  'LockPersonality=true',
+  'CapabilityBoundingSet=',
+  'AmbientCapabilities=',
+  'UMask=0077',
+]) {
+  for (const [serviceName, serviceConfig] of [['api', apiService], ['backup', backupService]]) {
+    assert(serviceConfig.includes(serviceHardening), `Systemd ${serviceName} service must include hardening directive: ${serviceHardening}`);
+  }
 }
 assert(app.includes('function apiFetch'), 'Frontend API calls must go through apiFetch');
 assert(app.includes("credentials: init.credentials ?? 'include'"), 'apiFetch must include same-origin proxy cookies');

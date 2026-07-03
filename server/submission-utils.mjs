@@ -201,6 +201,17 @@ export function collectSubmissionFileMetadata(row = {}) {
   ];
 }
 
+export function findSubmissionFileMetadata(rows = [], storedName = '') {
+  const cleanStoredName = String(storedName || '');
+  if (!cleanStoredName) return null;
+
+  for (const row of rows) {
+    const match = collectSubmissionFileMetadata(row).find((file) => file.storedName === cleanStoredName);
+    if (match) return match;
+  }
+  return null;
+}
+
 export function buildDownloadUrl(publicBaseUrl, storedName) {
   const base = String(publicBaseUrl || '').replace(/\/$/, '');
   const encodedName = encodeURIComponent(storedName);

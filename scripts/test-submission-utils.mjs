@@ -5,6 +5,7 @@ import {
   collectSubmissionFileMetadata,
   createSubmissionId,
   createGeneratedCoverSvg,
+  findSubmissionFileMetadata,
   formatSubmissionsCsv,
   isCoverImageFile,
   mapSubmissionRow,
@@ -202,6 +203,24 @@ test('collects submission file metadata safely when some stored json is corrupte
     { storedName: 'bai.docx', originalName: 'Bai du thi.docx' },
     { storedName: 'cover.svg', originalName: 'Anh dai dien.svg' },
   ]);
+});
+
+test('finds stored submission file metadata only when it is registered in submission rows', () => {
+  const metadata = findSubmissionFileMetadata([
+    {
+      submission_files_json: JSON.stringify([{ storedName: 'bai.docx', originalName: 'Bai du thi.docx' }]),
+      files_json: JSON.stringify([{ storedName: 'minh-chung.pdf', originalName: 'Minh chung.pdf' }]),
+      cover_image_json: JSON.stringify({ storedName: 'cover.svg', originalName: 'Anh dai dien.svg' }),
+    },
+    {
+      submission_files_json: '{broken',
+      files_json: '[]',
+      cover_image_json: '',
+    },
+  ], 'minh-chung.pdf');
+
+  assert.deepEqual(metadata, { storedName: 'minh-chung.pdf', originalName: 'Minh chung.pdf' });
+  assert.equal(findSubmissionFileMetadata([], 'stray.tmp'), null);
 });
 
 test('formats submissions as csv with quoted values and file links', () => {
