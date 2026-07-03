@@ -70,3 +70,30 @@ test('summarizes community vote counts by reaction', async () => {
     inspiring: 0,
   });
 });
+
+test('detects viewer vote with the same device and request fingerprint used for voting', async () => {
+  const communityVotes = await import('../server/community-votes.mjs');
+  const submissionId = 'TD-20260701-ABC123XY';
+  const deviceId = 'device-001';
+  const ip = '203.0.113.10';
+  const userAgent = 'Browser A';
+  const secret = 'test-secret';
+  const storedKey = communityVotes.createVoterKey({
+    submissionId,
+    deviceId,
+    ip,
+    userAgent,
+    secret,
+  });
+
+  const viewerHasVoted = communityVotes.hasViewerVoted({
+    submissionId,
+    deviceId,
+    ip,
+    userAgent,
+    secret,
+    findVoteByKey: (id, key) => (id === submissionId && key === storedKey ? { id: 'CV-1' } : null),
+  });
+
+  assert.equal(viewerHasVoted, true);
+});

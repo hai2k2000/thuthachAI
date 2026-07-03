@@ -29,6 +29,7 @@ import {
 } from './admin-session.mjs';
 import {
   createVoterKey,
+  hasViewerVoted,
   normalizeCommunityVoteInput,
   summarizeCommunityVotes,
 } from './community-votes.mjs';
@@ -638,9 +639,16 @@ app.get('/api/public/prompts', (_request, response) => {
 
 app.get('/api/public/featured', (request, response) => {
   const deviceId = cleanText(request.query?.deviceId, 128);
+  const ip = getRequestIp(request);
+  const userAgent = request.get('user-agent') || '';
   const submissions = listPublicFeatured
     .all()
-    .map((row) => buildPublicFeatured(mapSubmissionWithCommunity(row, { publicBaseUrl, deviceId })));
+    .map((row) => buildPublicFeatured(mapSubmissionWithCommunity(row, {
+      publicBaseUrl,
+      deviceId,
+      ip,
+      userAgent,
+    })));
   response.json({ ok: true, submissions });
 });
 
@@ -1258,17 +1266,22 @@ function positiveEnvNumber(name, fallback) {
   return Math.floor(value);
 }
 
-function mapSubmissionWithCommunity(row, { publicBaseUrl = '', deviceId = '' } = {}) {
+function mapSubmissionWithCommunity(row, {
+  publicBaseUrl = '',
+  deviceId = '',
+  ip = '',
+  userAgent = '',
+} = {}) {
   const submission = mapSubmissionRow(row, { publicBaseUrl });
   const community = getCommunityVoteSummary(submission.id);
-  const cleanDeviceId = cleanText(deviceId, 128);
-  const viewerHasVoted = cleanDeviceId
-    ? Boolean(findCommunityVoteByKey.get(submission.id, createVoterKey({
-      submissionId: submission.id,
-      deviceId: cleanDeviceId,
-      secret: communityVoteSecret,
-    })))
-    : false;
+  const viewerHasVoted = hasViewerVoted({
+    submissionId: submission.id,
+    deviceId,
+    ip,
+    userAgent,
+    secret: communityVoteSecret,
+    findVoteByKey: (submissionId, voterKey) => findCommunityVoteByKey.get(submissionId, voterKey),
+  });
 
   return {
     ...submission,

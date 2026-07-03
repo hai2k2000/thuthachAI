@@ -36,6 +36,27 @@ export function createVoterKey({ submissionId, deviceId, ip = '', userAgent = ''
     .digest('hex');
 }
 
+export function hasViewerVoted({
+  submissionId,
+  deviceId,
+  ip = '',
+  userAgent = '',
+  secret = '',
+  findVoteByKey,
+} = {}) {
+  const cleanSubmissionId = cleanText(submissionId, 100);
+  const cleanDeviceId = cleanText(deviceId, 128);
+  if (!cleanSubmissionId || !cleanDeviceId || typeof findVoteByKey !== 'function') return false;
+
+  return Boolean(findVoteByKey(cleanSubmissionId, createVoterKey({
+    submissionId: cleanSubmissionId,
+    deviceId: cleanDeviceId,
+    ip,
+    userAgent,
+    secret,
+  })));
+}
+
 export function summarizeCommunityVotes(rows = []) {
   const reactions = Object.fromEntries(communityVoteReactions.map((reaction) => [reaction, 0]));
   for (const row of rows) {
