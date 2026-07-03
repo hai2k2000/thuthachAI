@@ -86,6 +86,10 @@ assert(submissionCount >= 6, `Expected at least 6 submissions, found ${submissio
 for (const behavior of ['navigator.clipboard.writeText', 'SearchInput', 'SelectFilter', 'EmptyState', 'PromptDetail', 'SubmissionDetail', 'ChallengeDetail']) {
   assert(`${app}\n${components}`.includes(behavior), `Missing behavior/component: ${behavior}`);
 }
+assert(
+  /href="\/prompts"[\s\S]{0,180}Khám phá kho Prompt[\s\S]{0,180}href="\/rules"[\s\S]{0,120}Thể lệ cuộc thi/.test(app),
+  'Home hero must show a contest rules button next to the prompt library button',
+);
 
 for (const challengeCardHook of ['challengeGroupBadge', 'targetGroup']) {
   assert(`${app}\n${components}\n${styles}`.includes(challengeCardHook), `Missing challenge card group hook: ${challengeCardHook}`);

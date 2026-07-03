@@ -424,6 +424,7 @@ function HomePage({ navigate }: { navigate: (href: string) => void }) {
             <AppLink href="/challenges" navigate={navigate} className="primaryButton">Xem thử thách tuần này</AppLink>
             <AppLink href="/submit" navigate={navigate} className="darkButton">Nộp bài dự thi</AppLink>
             <AppLink href="/prompts" navigate={navigate} className="ghostButton">Khám phá kho Prompt</AppLink>
+            <AppLink href="/rules" navigate={navigate} className="ghostButton">Thể lệ cuộc thi</AppLink>
           </div>
         </div>
         <div className="heroVisual">
