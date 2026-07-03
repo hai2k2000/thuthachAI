@@ -10,8 +10,8 @@ Environment=NODE_NO_WARNINGS=1
 ExecStart=/usr/bin/node /opt/ai-challenge-hub/server/index.mjs
 Restart=always
 RestartSec=5
-User=root
-Group=root
+User=aichallenge
+Group=aichallenge
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true

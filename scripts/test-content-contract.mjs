@@ -314,6 +314,12 @@ for (const serviceHardening of [
     assert(serviceConfig.includes(serviceHardening), `Systemd ${serviceName} service must include hardening directive: ${serviceHardening}`);
   }
 }
+for (const [serviceName, serviceConfig] of [['api', apiService], ['backup', backupService]]) {
+  assert(serviceConfig.includes('User=aichallenge'), `Systemd ${serviceName} service must run as the aichallenge user`);
+  assert(serviceConfig.includes('Group=aichallenge'), `Systemd ${serviceName} service must run as the aichallenge group`);
+  assert(!serviceConfig.includes('User=root'), `Systemd ${serviceName} service must not run as root`);
+  assert(!serviceConfig.includes('Group=root'), `Systemd ${serviceName} service must not run as root group`);
+}
 assert(app.includes('function apiFetch'), 'Frontend API calls must go through apiFetch');
 assert(app.includes("credentials: init.credentials ?? 'include'"), 'apiFetch must include same-origin proxy cookies');
 for (const apiFetchHook of ['async function apiFetch', 'shouldRetryApiFetch', 'warmApiOrigin', 'await warmApiOrigin()', "method === 'GET'", "error instanceof TypeError", "'/api/submissions/health'"]) {

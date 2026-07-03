@@ -10,6 +10,13 @@
 - Gửi thử một bài dự thi có file bài làm, file minh chứng và ảnh đại diện.
 - Bình chọn thử một bài tiêu biểu bằng trình duyệt thường và ẩn danh để xác nhận giới hạn 1 máy/1 bài.
 
+## User hệ thống và quyền thư mục
+
+- Tạo user chạy service nếu chưa có: `useradd --system --home-dir /opt/ai-challenge-hub --shell /usr/sbin/nologin aichallenge`.
+- Cấp quyền ghi dữ liệu runtime: `chown -R aichallenge:aichallenge /opt/ai-challenge-hub/storage`.
+- Copy `deploy/ai-challenge-api.service` vào `/etc/systemd/system/`, chạy `systemctl daemon-reload`, rồi restart service.
+- Kiểm tra API không chạy bằng root: `systemctl show ai-challenge-api -p User -p Group`.
+
 ## Biến môi trường cần rà soát
 
 - `PUBLIC_BASE_URL=https://thuthachai.io.vn`

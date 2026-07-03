@@ -8,8 +8,8 @@ WorkingDirectory=/opt/ai-challenge-hub
 EnvironmentFile=/etc/ai-challenge-hub.env
 Environment=NODE_NO_WARNINGS=1
 ExecStart=/usr/bin/node /opt/ai-challenge-hub/scripts/backup-production.mjs
-User=root
-Group=root
+User=aichallenge
+Group=aichallenge
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
