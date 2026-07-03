@@ -7,6 +7,8 @@ import { DatabaseSync } from 'node:sqlite';
 import multer from 'multer';
 
 import { buildAdminLoginResponse } from './admin-auth.mjs';
+import { normalizeSubmissionReviewPatch } from './admin-submissions.mjs';
+import { normalizeApiError } from './api-errors.mjs';
 import {
   adminRoles,
   adminStatuses,
@@ -43,6 +45,7 @@ import {
   validateSubmissionFields,
 } from './submission-utils.mjs';
 import { createRateLimitMiddleware, createRateLimitStore } from './rate-limit.mjs';
+import { validateUploadedImageSignatures } from './upload-security.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = path.resolve(process.env.SUBMISSIONS_DATA_DIR || path.join(rootDir, 'storage'));
@@ -433,6 +436,13 @@ app.post('/api/submissions', submissionsRateLimit, upload.fields([
   const coverImageFiles = request.files?.coverImage || [];
   const coverImageFile = coverImageFiles[0] || null;
   const uploadedFiles = [...submissionFiles, ...evidenceFiles, ...coverImageFiles];
+  const uploadSignatureValidation = validateUploadedImageSignatures(uploadedFiles);
+  if (!uploadSignatureValidation.ok) {
+    removeTempFiles(uploadedFiles);
+    response.status(400).json({ ok: false, errors: uploadSignatureValidation.errors });
+    return;
+  }
+
   const fields = normalizeSubmissionFields(request.body);
   const validation = validateSubmissionFields(fields, { submissionFiles, evidenceFiles, coverImage: coverImageFiles });
 
@@ -700,13 +710,20 @@ app.patch('/api/admin/submissions/:id', requireAdminRole(['admin', 'judge']), (r
   }
 
   const current = mapSubmissionRow(existing);
-  const reviewStatus = pickStatus(request.body?.reviewStatus, ['pending', 'reviewing', 'scored'], current.reviewStatus);
-  const promptStatus = pickStatus(request.body?.promptStatus, ['pending', 'approved', 'rejected'], current.promptStatus);
-  const featuredStatus = pickStatus(request.body?.featuredStatus, ['pending', 'approved', 'rejected'], current.featuredStatus);
-  const score = clampScore(request.body?.score, current.score);
-  const judgeNote = cleanText(request.body?.judgeNote ?? current.judgeNote, 2000);
+  const validation = normalizeSubmissionReviewPatch(request.body, current);
+  if (!validation.ok) {
+    response.status(400).json({ ok: false, errors: validation.errors });
+    return;
+  }
 
-  updateSubmissionReview.run(reviewStatus, promptStatus, featuredStatus, score, judgeNote, id);
+  updateSubmissionReview.run(
+    validation.patch.reviewStatus,
+    validation.patch.promptStatus,
+    validation.patch.featuredStatus,
+    validation.patch.score,
+    validation.patch.judgeNote,
+    id,
+  );
   const updated = mapSubmissionWithCommunity(findSubmissionById.get(id), { publicBaseUrl });
   response.json({ ok: true, submission: updated });
 });
@@ -826,24 +843,14 @@ app.get('/api/submissions/files/:storedName', requireAdminRole(['admin', 'judge'
 });
 
 app.use((error, _request, response, _next) => {
-  if (error?.code === 'LIMIT_FILE_SIZE') {
-    response.status(413).json({ ok: false, errors: [`Moi file khong duoc vuot qua ${maxUploadMb}MB.`] });
-    return;
+  const normalized = normalizeApiError(error, {
+    maxUploadMb,
+    maxFiles: maxSubmissionFiles + maxUploadFiles + maxCoverImages,
+  });
+  if (normalized.log) {
+    console.error('Unhandled API error', error);
   }
-  if (error?.code === 'LIMIT_FILE_COUNT') {
-    response.status(413).json({ ok: false, errors: [`Moi lan gui toi da ${maxSubmissionFiles + maxUploadFiles + maxCoverImages} file.`] });
-    return;
-  }
-  if (error?.message === 'UNSUPPORTED_FILE_TYPE') {
-    response.status(400).json({ ok: false, errors: ['Dinh dang file chua duoc ho tro.'] });
-    return;
-  }
-  if (error?.message === 'UNSUPPORTED_COVER_IMAGE_TYPE') {
-    response.status(400).json({ ok: false, errors: ['Anh dai dien chi ho tro JPG, PNG hoac WEBP.'] });
-    return;
-  }
-  console.error('Unhandled API error', error);
-  response.status(500).json({ ok: false, errors: ['May chu dang ban. Vui long thu lai.'] });
+  response.status(normalized.status).json(normalized.body);
 });
 
 app.listen(port, host, () => {
@@ -1090,17 +1097,6 @@ function toAdminSessionUser(row) {
 
 function getCommunityVoteSummary(submissionId) {
   return summarizeCommunityVotes(listCommunityVotesBySubmission.all(submissionId));
-}
-
-function pickStatus(value, allowed, fallback) {
-  const normalized = cleanText(value, 40);
-  return allowed.includes(normalized) ? normalized : fallback;
-}
-
-function clampScore(value, fallback = 0) {
-  const score = Number(value);
-  if (!Number.isFinite(score)) return fallback;
-  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function buildPublicPrompts(submission) {

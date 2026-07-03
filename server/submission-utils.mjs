@@ -230,9 +230,9 @@ export function createGeneratedCoverSvg(fields = {}, sourceFile = {}) {
 }
 
 export function isCoverImageFile(file = {}) {
-  const extension = path.extname(file.originalname || file.filename || '').toLowerCase();
-  const mimeType = String(file.mimetype || '').toLowerCase();
-  return coverImageExtensions.has(extension) || coverImageMimeTypes.has(mimeType);
+  const extension = path.extname(file.originalname || file.originalName || file.filename || file.storedName || '').toLowerCase();
+  const mimeType = String(file.mimetype || file.mimeType || '').toLowerCase();
+  return coverImageExtensions.has(extension) && coverImageMimeTypes.has(mimeType);
 }
 
 function formatFileList(files) {

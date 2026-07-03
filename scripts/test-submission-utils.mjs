@@ -5,6 +5,7 @@ import {
   createSubmissionId,
   createGeneratedCoverSvg,
   formatSubmissionsCsv,
+  isCoverImageFile,
   mapSubmissionRow,
   normalizeSubmissionFields,
   validateSubmissionFields,
@@ -102,6 +103,14 @@ test('creates a generated cover svg from submission content when no cover is upl
   assert.match(svg, /^<svg /);
   assert.match(svg, /Tro ly tom tat phan hoi doc gia/);
   assert.match(svg, /bai-du-thi\.docx/);
+});
+
+test('requires cover images to have matching image extension and mime type', () => {
+  assert.equal(isCoverImageFile({ originalname: 'cover.png', mimetype: 'image/png' }), true);
+  assert.equal(isCoverImageFile({ originalName: 'stored-cover.webp', mimeType: 'image/webp' }), true);
+  assert.equal(isCoverImageFile({ storedName: 'stored-cover.jpg', mimeType: 'image/jpeg' }), true);
+  assert.equal(isCoverImageFile({ originalname: 'cover.png', mimetype: 'text/html' }), false);
+  assert.equal(isCoverImageFile({ originalname: 'cover.txt', mimetype: 'image/png' }), false);
 });
 
 test('maps cover image metadata with a public cover URL', () => {

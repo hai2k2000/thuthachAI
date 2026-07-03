@@ -7,6 +7,8 @@ const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 const components = fs.readFileSync(path.join(root, 'src/components.tsx'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'src/styles.css'), 'utf8');
 const server = fs.readFileSync(path.join(root, 'server/index.mjs'), 'utf8');
+const apiErrors = fs.readFileSync(path.join(root, 'server/api-errors.mjs'), 'utf8');
+const uploadSecurity = fs.readFileSync(path.join(root, 'server/upload-security.mjs'), 'utf8');
 const nginxConfig = fs.readFileSync(path.join(root, 'deploy/ai-challenge-hub.conf'), 'utf8');
 const harnessDir = path.join(root, 'harness');
 
@@ -166,6 +168,12 @@ for (const adminDownloadHook of ['downloadAdminCsv', 'downloadAdminFile', 'URL.c
 }
 assert(/canManageUsers\s*\?\s*\(\s*<a className=\{activeAdminView === 'users'/s.test(app), 'User management sidebar link must only render for admin role');
 assert(app.includes("activeAdminView === 'users' && canManageUsers"), 'User management panel must only render for admin role');
+for (const apiHardeningHook of ['normalizeApiError(error', "error?.type === 'entity.parse.failed'", 'validateUploadedImageSignatures(uploadedFiles)', 'normalizeSubmissionReviewPatch(request.body, current)']) {
+  assert(`${server}\n${apiErrors}\n${uploadSecurity}`.includes(apiHardeningHook), `Missing API hardening hook: ${apiHardeningHook}`);
+}
+for (const uploadSignatureHook of ['detectImageSignature', "'RIFF'", "'WEBP'", 'File anh']) {
+  assert(uploadSecurity.includes(uploadSignatureHook), `Missing upload signature validation hook: ${uploadSignatureHook}`);
+}
 
 for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain', 'adminOverviewPanel']) {
   assert(`${app}\n${styles}`.includes(adminLayoutHook), `Missing standalone admin layout hook: ${adminLayoutHook}`);
