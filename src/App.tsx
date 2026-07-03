@@ -763,7 +763,23 @@ type AdminUser = {
   createdAt: string;
 };
 
-type AdminView = 'overview' | 'submissions' | 'scoring' | 'users' | 'support';
+type AdminAuditLog = {
+  id: string;
+  createdAt: string;
+  actor: {
+    id: string;
+    username: string;
+    role: string;
+  };
+  action: string;
+  targetType: string;
+  targetId: string;
+  details: Record<string, unknown>;
+  ip: string;
+  userAgent: string;
+};
+
+type AdminView = 'overview' | 'submissions' | 'scoring' | 'users' | 'audit' | 'support';
 type AdminRole = 'admin' | 'judge' | 'viewer' | '';
 
 const adminViewAnchors: Record<AdminView, string> = {
@@ -771,6 +787,7 @@ const adminViewAnchors: Record<AdminView, string> = {
   submissions: '#admin-submissions',
   scoring: '#admin-scoring',
   users: '#admin-users',
+  audit: '#admin-audit',
   support: '#admin-support',
 };
 
@@ -779,6 +796,7 @@ function adminViewFromHash(hash: string): AdminView {
   if (normalized === 'admin-submissions') return 'submissions';
   if (normalized === 'admin-scoring') return 'scoring';
   if (normalized === 'admin-users') return 'users';
+  if (normalized === 'admin-audit') return 'audit';
   if (normalized === 'admin-support') return 'support';
   return 'overview';
 }
@@ -2338,6 +2356,7 @@ function AdminPage() {
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([]);
   const [userForm, setUserForm] = useState({ username: '', displayName: '', role: 'judge', password: '' });
   const [status, setStatus] = useState<SubmitStatus>({ state: 'idle' });
   const [activeAdminView, setActiveAdminView] = useState<AdminView>(() => adminViewFromHash(window.location.hash));
@@ -2406,6 +2425,7 @@ function AdminPage() {
     setSubmissions([]);
     setMessages([]);
     setAdminUsers([]);
+    setAdminAuditLogs([]);
     setStatus({ state: 'idle' });
     setLoginForm({ username: 'admin', password: '' });
   }
@@ -2426,16 +2446,24 @@ function AdminPage() {
       const submissionData = await submissionResponse.json().catch(() => ({} as { submissions?: AdminSubmission[]; errors?: string[] }));
       const contactData = await contactResponse.json().catch(() => ({} as { messages?: ContactMessage[]; errors?: string[] }));
       let userData = {} as { users?: AdminUser[]; errors?: string[] };
+      let auditData = {} as { logs?: AdminAuditLog[]; errors?: string[] };
       let userResponse: Pick<Response, 'ok'> = { ok: true };
+      let auditResponse: Pick<Response, 'ok'> = { ok: true };
       if (role === 'admin') {
-        const nextUserResponse = await apiFetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } });
+        const [nextUserResponse, nextAuditResponse] = await Promise.all([
+          apiFetch('/api/admin/users', { headers: { 'x-admin-token': nextToken } }),
+          apiFetch('/api/admin/audit-logs', { headers: { 'x-admin-token': nextToken } }),
+        ]);
         userResponse = nextUserResponse;
+        auditResponse = nextAuditResponse;
         userData = await nextUserResponse.json().catch(() => ({} as { users?: AdminUser[]; errors?: string[] }));
+        auditData = await nextAuditResponse.json().catch(() => ({} as { logs?: AdminAuditLog[]; errors?: string[] }));
       }
 
       if (!submissionResponse.ok) throw new Error(submissionData.errors?.join(' ') || 'Không thể tải danh sách bài dự thi.');
       if (!contactResponse.ok) throw new Error(contactData.errors?.join(' ') || 'Không thể tải danh sách liên hệ.');
       if (!userResponse.ok) throw new Error(userData.errors?.join(' ') || 'Không thể tải danh sách tài khoản.');
+      if (!auditResponse.ok) throw new Error(auditData.errors?.join(' ') || 'Không thể tải nhật ký quản trị.');
 
       window.localStorage.setItem('aiChallengeAdminToken', nextToken);
       window.localStorage.setItem('aiChallengeAdminRole', role);
@@ -2444,6 +2472,7 @@ function AdminPage() {
       setSubmissions(submissionData.submissions ?? []);
       setMessages(contactData.messages ?? []);
       setAdminUsers(userData.users ?? []);
+      setAdminAuditLogs(auditData.logs ?? []);
       setStatus({ state: 'success', receiptId: '', message: 'Đã tải dữ liệu quản trị.' });
     } catch (error) {
       setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Không thể tải dữ liệu quản trị.' });
@@ -2560,9 +2589,9 @@ function AdminPage() {
   const canManageUsers = adminRole === 'admin';
   const canReviewSubmissions = adminRole === 'admin' || adminRole === 'judge';
   useEffect(() => {
-    if (activeAdminView !== 'users' || canManageUsers) return;
+    if ((activeAdminView !== 'users' && activeAdminView !== 'audit') || canManageUsers) return;
     setActiveAdminView('overview');
-    if (window.location.hash === adminViewAnchors.users) {
+    if (window.location.hash === adminViewAnchors.users || window.location.hash === adminViewAnchors.audit) {
       window.history.replaceState(null, '', adminViewAnchors.overview);
     }
   }, [activeAdminView, canManageUsers]);
@@ -2570,23 +2599,25 @@ function AdminPage() {
   const pendingScoringCount = submissions.filter((submission) => submission.reviewStatus !== 'scored').length;
   const scoredCount = submissions.filter((submission) => submission.reviewStatus === 'scored').length;
   const communityVoteTotal = submissions.reduce((total, submission) => total + (submission.communityVoteCount || 0), 0);
-  const adminStats = [
+  const adminStats: Array<{ value: string; label: string; accent?: boolean; adminOnly?: boolean }> = [
     { value: String(submissions.length), label: 'Bài dự thi' },
     { value: String(pendingScoringCount), label: 'Chờ chấm' },
     { value: String(scoredCount), label: 'Đã chấm', accent: true },
     { value: String(communityVoteTotal), label: 'Bình chọn' },
-    { value: String(adminUsers.length), label: 'Tài khoản' },
+    { value: String(adminUsers.length), label: 'Tài khoản', adminOnly: true },
+    { value: String(adminAuditLogs.length), label: 'Nhật ký', adminOnly: true },
     { value: String(messages.length), label: 'Hỗ trợ' },
   ];
-  const adminQuickLinks: Array<{ view: AdminView; href: string; icon: string; label: string; count: string; unit: string }> = [
+  const adminQuickLinks: Array<{ view: AdminView; href: string; icon: string; label: string; count: string; unit: string; adminOnly?: boolean }> = [
     { view: 'submissions', href: adminViewAnchors.submissions, icon: 'folder_open', label: 'Quản lý bài dự thi', count: String(submissions.length), unit: 'bài' },
     { view: 'scoring', href: adminViewAnchors.scoring, icon: 'grading', label: 'Chấm điểm bài thi', count: String(pendingScoringCount), unit: 'chờ chấm' },
-    { view: 'users', href: adminViewAnchors.users, icon: 'manage_accounts', label: 'Quản trị user', count: String(adminUsers.length), unit: 'user' },
+    { view: 'users', href: adminViewAnchors.users, icon: 'manage_accounts', label: 'Quản trị user', count: String(adminUsers.length), unit: 'user', adminOnly: true },
+    { view: 'audit', href: adminViewAnchors.audit, icon: 'history', label: 'Nhật ký quản trị', count: String(adminAuditLogs.length), unit: 'log', adminOnly: true },
     { view: 'support', href: adminViewAnchors.support, icon: 'support_agent', label: 'Yêu cầu hỗ trợ', count: String(messages.length), unit: 'yêu cầu' },
   ];
 
-  const visibleAdminStats = canManageUsers ? adminStats : adminStats.filter((_, index) => index !== 4);
-  const visibleAdminQuickLinks = canManageUsers ? adminQuickLinks : adminQuickLinks.filter((link) => link.view !== 'users');
+  const visibleAdminStats = adminStats.filter((stat) => canManageUsers || !stat.adminOnly);
+  const visibleAdminQuickLinks = adminQuickLinks.filter((link) => canManageUsers || !link.adminOnly);
 
   return (
     <main className="adminApp">
@@ -2602,6 +2633,9 @@ function AdminPage() {
           <a className={activeAdminView === 'scoring' ? 'isActive' : undefined} href={adminViewAnchors.scoring} onClick={() => setActiveAdminView('scoring')}><Icon name="grading" /> Chấm điểm bài thi</a>
           {canManageUsers ? (
             <a className={activeAdminView === 'users' ? 'isActive' : undefined} href={adminViewAnchors.users} onClick={() => setActiveAdminView('users')}><Icon name="manage_accounts" /> Quản trị user</a>
+          ) : null}
+          {canManageUsers ? (
+            <a className={activeAdminView === 'audit' ? 'isActive' : undefined} href={adminViewAnchors.audit} onClick={() => setActiveAdminView('audit')}><Icon name="history" /> Nhật ký quản trị</a>
           ) : null}
           <a className={activeAdminView === 'support' ? 'isActive' : undefined} href={adminViewAnchors.support} onClick={() => setActiveAdminView('support')}><Icon name="support_agent" /> Yêu cầu hỗ trợ</a>
         </nav>
@@ -2872,6 +2906,42 @@ function AdminPage() {
       </section>
       ) : null}
 
+      {activeAdminView === 'audit' && canManageUsers ? (
+      <section className="adminSection adminAuditPanel" id="admin-audit">
+        <SectionHeading title="Nhật ký quản trị" description="Theo dõi các lần đăng nhập, chấm bài và thay đổi tài khoản quản trị." action={<ResultsCount count={adminAuditLogs.length} label="log" />} />
+        {adminAuditLogs.length ? (
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Tài khoản</th>
+                  <th>Hành động</th>
+                  <th>Đối tượng</th>
+                  <th>Chi tiết</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAuditLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td>{formatDateTime(log.createdAt)}</td>
+                    <td>{log.actor.username || 'Không rõ'}<br /><small>{log.actor.role || 'n/a'}</small></td>
+                    <td>{formatAuditAction(log.action)}</td>
+                    <td>{log.targetType}<br /><small>{log.targetId || 'n/a'}</small></td>
+                    <td><code>{formatAuditDetails(log.details)}</code></td>
+                    <td>{log.ip || 'n/a'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title="Chưa có nhật ký quản trị" description="Các thao tác đăng nhập, chấm bài và quản trị user sẽ được ghi lại tại đây." />
+        )}
+      </section>
+      ) : null}
+
       {activeAdminView === 'support' ? (
       <section className="adminSection" id="admin-support">
         <SectionHeading title="Yêu cầu hỗ trợ" action={<ResultsCount count={messages.length} label="yêu cầu" />} />
@@ -2933,6 +3003,22 @@ function AdminFileGroup({ title, files, onDownload }: { title: string; files: Ad
       )}
     </div>
   );
+}
+
+function formatAuditAction(action: string) {
+  const labels: Record<string, string> = {
+    'admin.login.success': 'Đăng nhập thành công',
+    'admin.login.failed': 'Đăng nhập thất bại',
+    'submission.review.update': 'Cập nhật chấm bài',
+    'admin.user.create': 'Tạo tài khoản',
+    'admin.user.update': 'Cập nhật tài khoản',
+  };
+  return labels[action] || action;
+}
+
+function formatAuditDetails(details: Record<string, unknown>) {
+  const text = JSON.stringify(details || {});
+  return text.length > 180 ? `${text.slice(0, 177)}...` : text;
 }
 
 function SearchPage({ navigate }: { navigate: (href: string) => void }) {

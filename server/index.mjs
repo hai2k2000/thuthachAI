@@ -7,6 +7,10 @@ import { DatabaseSync } from 'node:sqlite';
 import multer from 'multer';
 
 import { buildAdminLoginResponse } from './admin-auth.mjs';
+import {
+  buildAdminAuditRecord,
+  toPublicAdminAuditLog,
+} from './admin-audit.mjs';
 import { normalizeSubmissionReviewPatch } from './admin-submissions.mjs';
 import { normalizeApiError } from './api-errors.mjs';
 import {
@@ -171,6 +175,20 @@ db.exec(`
     password_hash TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    actor_username TEXT NOT NULL,
+    actor_role TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_type TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    details_json TEXT NOT NULL,
+    ip TEXT NOT NULL,
+    user_agent TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS community_votes (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL,
@@ -204,6 +222,7 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_forum_threads_created_at ON forum_threads(created_at);
   CREATE INDEX IF NOT EXISTS idx_forum_replies_thread_id ON forum_replies(thread_id);
+  CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at ON admin_audit_logs(created_at);
 `);
 
 ensureSubmissionColumn('submission_files_json', "TEXT NOT NULL DEFAULT '[]'");
@@ -315,6 +334,22 @@ const listContactMessages = db.prepare('SELECT * FROM contact_messages ORDER BY 
 const listAdminUsers = db.prepare('SELECT * FROM admin_users ORDER BY created_at ASC');
 const findAdminUserByUsername = db.prepare('SELECT * FROM admin_users WHERE username = ?');
 const findAdminUserById = db.prepare('SELECT * FROM admin_users WHERE id = ?');
+const listAdminAuditLogs = db.prepare('SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT 200');
+const insertAdminAuditLog = db.prepare(`
+  INSERT INTO admin_audit_logs (
+    id,
+    created_at,
+    actor_id,
+    actor_username,
+    actor_role,
+    action,
+    target_type,
+    target_id,
+    details_json,
+    ip,
+    user_agent
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
 const insertAdminUser = db.prepare(`
   INSERT INTO admin_users (
     id,
@@ -383,9 +418,29 @@ app.post('/api/admin/login', adminLoginRateLimit, (request, response) => {
       return;
     }
     if (user.status !== 'active' || !verifyPassword(request.body?.password, user.password_hash)) {
+      logAdminAudit(request, {
+        actor: toAdminSessionUser(user),
+        action: 'admin.login.failed',
+        targetType: 'admin_user',
+        targetId: user.id,
+        details: {
+          username: user.username,
+          reason: 'invalid_credentials',
+        },
+      });
       response.status(401).json({ ok: false, errors: ['Sai tai khoan hoac mat khau quan tri.'] });
       return;
     }
+    logAdminAudit(request, {
+      actor: toAdminSessionUser(user),
+      action: 'admin.login.success',
+      targetType: 'admin_user',
+      targetId: user.id,
+      details: {
+        username: user.username,
+        role: user.role,
+      },
+    });
     response.json({
       ok: true,
       token: createAdminSessionToken({
@@ -405,6 +460,21 @@ app.post('/api/admin/login', adminLoginRateLimit, (request, response) => {
     token: adminToken,
   });
   if (result.status !== 200) {
+    if (result.status === 401) {
+      const attemptedUsername = cleanText(request.body?.username, 60).toLowerCase();
+      logAdminAudit(request, {
+        actor: {
+          username: attemptedUsername,
+        },
+        action: 'admin.login.failed',
+        targetType: 'admin_user',
+        targetId: attemptedUsername,
+        details: {
+          username: attemptedUsername,
+          reason: 'invalid_credentials',
+        },
+      });
+    }
     response.status(result.status).json(result.body);
     return;
   }
@@ -414,6 +484,16 @@ app.post('/api/admin/login', adminLoginRateLimit, (request, response) => {
     username: adminUsername,
     role: 'admin',
   };
+  logAdminAudit(request, {
+    actor: fallbackUser,
+    action: 'admin.login.success',
+    targetType: 'admin_user',
+    targetId: fallbackUser.id,
+    details: {
+      username: fallbackUser.username,
+      role: fallbackUser.role,
+    },
+  });
   response.status(200).json({
     ok: true,
     token: createAdminSessionToken({
@@ -724,6 +804,21 @@ app.patch('/api/admin/submissions/:id', requireAdminRole(['admin', 'judge']), (r
     validation.patch.judgeNote,
     id,
   );
+  logAdminAudit(request, {
+    action: 'submission.review.update',
+    targetType: 'submission',
+    targetId: id,
+    details: {
+      before: {
+        reviewStatus: current.reviewStatus,
+        promptStatus: current.promptStatus,
+        featuredStatus: current.featuredStatus,
+        score: current.score,
+        judgeNote: current.judgeNote,
+      },
+      after: validation.patch,
+    },
+  });
   const updated = mapSubmissionWithCommunity(findSubmissionById.get(id), { publicBaseUrl });
   response.json({ ok: true, submission: updated });
 });
@@ -751,6 +846,13 @@ app.get('/api/admin/users', requireAdminRole(['admin']), (_request, response) =>
   });
 });
 
+app.get('/api/admin/audit-logs', requireAdminRole(['admin']), (_request, response) => {
+  response.json({
+    ok: true,
+    logs: listAdminAuditLogs.all().map(toPublicAdminAuditLog),
+  });
+});
+
 app.post('/api/admin/users', requireAdminRole(['admin']), (request, response) => {
   const validation = normalizeAdminUserInput(request.body, { requirePassword: true });
   if (!validation.ok) {
@@ -774,7 +876,19 @@ app.post('/api/admin/users', requireAdminRole(['admin']), (request, response) =>
     user.status,
     createPasswordHash(user.password),
   );
-  response.status(201).json({ ok: true, user: toPublicAdminUser(findAdminUserById.get(id)) });
+  const createdUser = findAdminUserById.get(id);
+  logAdminAudit(request, {
+    action: 'admin.user.create',
+    targetType: 'admin_user',
+    targetId: id,
+    details: {
+      username: createdUser.username,
+      displayName: createdUser.display_name,
+      role: createdUser.role,
+      status: createdUser.status,
+    },
+  });
+  response.status(201).json({ ok: true, user: toPublicAdminUser(createdUser) });
 });
 
 app.patch('/api/admin/users/:id', requireAdminRole(['admin']), (request, response) => {
@@ -800,7 +914,27 @@ app.patch('/api/admin/users/:id', requireAdminRole(['admin']), (request, respons
   const user = validation.user;
   const passwordHash = user.password ? createPasswordHash(user.password) : current.password_hash;
   updateAdminUser.run(user.displayName, user.role, user.status, passwordHash, id);
-  response.json({ ok: true, user: toPublicAdminUser(findAdminUserById.get(id)) });
+  const updatedUser = findAdminUserById.get(id);
+  logAdminAudit(request, {
+    action: 'admin.user.update',
+    targetType: 'admin_user',
+    targetId: id,
+    details: {
+      username: current.username,
+      before: {
+        displayName: current.display_name,
+        role: current.role,
+        status: current.status,
+      },
+      after: {
+        displayName: updatedUser.display_name,
+        role: updatedUser.role,
+        status: updatedUser.status,
+      },
+      passwordChanged: Boolean(user.password),
+    },
+  });
+  response.json({ ok: true, user: toPublicAdminUser(updatedUser) });
 });
 
 app.get('/api/submissions/covers/:storedName', (request, response) => {
@@ -914,6 +1048,41 @@ function requireAdminToken(request, response, next) {
   }
   request.adminUser = currentUser;
   next();
+}
+
+function logAdminAudit(request, {
+  actor = request.adminUser || {},
+  action = '',
+  targetType = '',
+  targetId = '',
+  details = {},
+} = {}) {
+  try {
+    const record = buildAdminAuditRecord({
+      actor,
+      action,
+      targetType,
+      targetId,
+      details,
+      ip: getRequestIp(request),
+      userAgent: request.get('user-agent') || '',
+    });
+    insertAdminAuditLog.run(
+      record.id,
+      record.createdAt,
+      record.actorId,
+      record.actorUsername,
+      record.actorRole,
+      record.action,
+      record.targetType,
+      record.targetId,
+      record.detailsJson,
+      record.ip,
+      record.userAgent,
+    );
+  } catch (error) {
+    console.error('Failed to write admin audit log', error);
+  }
 }
 
 function resolveAdminSessionUser(session) {

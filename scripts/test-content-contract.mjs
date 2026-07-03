@@ -7,6 +7,7 @@ const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 const components = fs.readFileSync(path.join(root, 'src/components.tsx'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'src/styles.css'), 'utf8');
 const server = fs.readFileSync(path.join(root, 'server/index.mjs'), 'utf8');
+const adminAudit = fs.readFileSync(path.join(root, 'server/admin-audit.mjs'), 'utf8');
 const apiErrors = fs.readFileSync(path.join(root, 'server/api-errors.mjs'), 'utf8');
 const uploadSecurity = fs.readFileSync(path.join(root, 'server/upload-security.mjs'), 'utf8');
 const nginxConfig = fs.readFileSync(path.join(root, 'deploy/ai-challenge-hub.conf'), 'utf8');
@@ -173,6 +174,15 @@ for (const apiHardeningHook of ['normalizeApiError(error', "error?.type === 'ent
 }
 for (const uploadSignatureHook of ['detectImageSignature', "'RIFF'", "'WEBP'", 'File anh']) {
   assert(uploadSecurity.includes(uploadSignatureHook), `Missing upload signature validation hook: ${uploadSignatureHook}`);
+}
+for (const adminAuditHook of ['admin_audit_logs', 'insertAdminAuditLog', 'listAdminAuditLogs', '/api/admin/audit-logs', 'logAdminAudit(request', 'toPublicAdminAuditLog']) {
+  assert(`${server}\n${adminAudit}`.includes(adminAuditHook), `Missing admin audit log hook: ${adminAuditHook}`);
+}
+for (const adminAuditAction of ['admin.login.success', 'admin.login.failed', 'submission.review.update', 'admin.user.create', 'admin.user.update']) {
+  assert(server.includes(adminAuditAction), `Missing admin audit action: ${adminAuditAction}`);
+}
+for (const adminAuditUiHook of ['adminAuditPanel', 'adminAuditLogs', '/api/admin/audit-logs', '#admin-audit']) {
+  assert(app.includes(adminAuditUiHook), `Missing admin audit UI hook: ${adminAuditUiHook}`);
 }
 
 for (const adminLayoutHook of ['isAdminRoute', 'adminApp', 'adminSidebar', 'adminMain', 'adminOverviewPanel']) {
