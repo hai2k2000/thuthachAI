@@ -967,13 +967,9 @@ const initialSubmissionForm: SubmissionFormState = {
 };
 
 const departmentOptions = [
-  'Ban Biên tập',
-  'Ban Phóng viên',
-  'Ban Đối ngoại',
-  'Ban Kinh tế - Xã hội',
-  'Ban Trị sự',
-  'Hành chính - Văn thư',
-  'Bộ phận khác',
+  'Ban lãnh đạo',
+  'Phòng Nội dung',
+  'Phòng Tổng hợp',
 ];
 
 const challengeGroupOptions = [

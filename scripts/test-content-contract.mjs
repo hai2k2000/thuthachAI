@@ -107,6 +107,14 @@ for (const submissionGroupOption of ['Nhóm Phóng viên, Biên tập viên', 'N
 }
 assert(!app.includes('Nhóm nhiệm vụ khác'), 'Submission form must only expose the three official groups');
 
+const departmentOptionsMatch = app.match(/const departmentOptions = \[([\s\S]*?)\];/);
+assert(departmentOptionsMatch, 'Submission form must define departmentOptions');
+const departmentOptions = Array.from(departmentOptionsMatch[1].matchAll(/'([^']+)'/g), (match) => match[1]);
+assert(
+  JSON.stringify(departmentOptions) === JSON.stringify(['Ban lãnh đạo', 'Phòng Nội dung', 'Phòng Tổng hợp']),
+  `Submission form must only expose the three official department options, found: ${departmentOptions.join(', ')}`,
+);
+
 for (const vietnameseBadge of ['Người khởi đầu AI', 'Người xây dựng prompt', 'Người tạo quy trình AI', 'Nhà sáng tạo AI', 'Nhà vô địch AI', 'Bậc thầy prompt', 'Đại sứ AI']) {
   assert(`${data}\n${app}`.includes(vietnameseBadge), `Missing Vietnamese badge label: ${vietnameseBadge}`);
 }
